@@ -8,6 +8,8 @@ const fmtFecha = (s) =>
   s ? new Date(s + 'T00:00:00').toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
 const TIPOS = ['Costo', 'Gasto']
+const TIPOS_DOC = ['Factura', 'Nota de Venta']
+const PLAZOS = [0, 30, 60, 90]
 const INPUT = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
 const SELECT = INPUT + ' bg-white'
 
@@ -39,8 +41,20 @@ function ModalConfirmar({ nombre, onConfirm, onCancel, pending }) {
 
 // ——— Campos compartidos del formulario ———
 function CamposCompra({ state, formAction, pending, compra, isEdit, onClose, hoy }) {
+  const [tipoDocCompra, setTipoDocCompra] = useState(compra?.tipo_doc_compra ?? 'Factura')
   const [subtotal, setSubtotal] = useState(String(compra?.subtotal ?? ''))
   const [ivaVal, setIvaVal] = useState(String(compra?.iva ?? '0'))
+  const [plazo, setPlazo] = useState(String(compra?.plazo_pago_proveedor ?? '0'))
+
+  // Auto-calcular IVA cuando cambia el subtotal o tipo de documento
+  useEffect(() => {
+    const sub = parseFloat(subtotal) || 0
+    if (tipoDocCompra === 'Factura') {
+      setIvaVal((sub * 0.15).toFixed(2))
+    } else {
+      setIvaVal('0')
+    }
+  }, [subtotal, tipoDocCompra])
 
   const sub = parseFloat(subtotal) || 0
   const iva = parseFloat(ivaVal) || 0
@@ -64,19 +78,53 @@ function CamposCompra({ state, formAction, pending, compra, isEdit, onClose, hoy
         <p className="px-3.5 py-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm">{state.error}</p>
       )}
 
+      {/* Tipo documento + Tipo (Costo/Gasto) */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Proveedor <span className="text-red-500">*</span></label>
-          <input name="proveedor" type="text" required defaultValue={compra?.proveedor ?? ''} placeholder="Nombre del proveedor" className={INPUT} />
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Doc. proveedor <span className="text-red-500">*</span></label>
+          <select
+            name="tipo_doc_compra" required value={tipoDocCompra}
+            onChange={(e) => setTipoDocCompra(e.target.value)}
+            className={SELECT}
+          >
+            {TIPOS_DOC.map((t) => <option key={t}>{t}</option>)}
+          </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Tipo <span className="text-red-500">*</span></label>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Clasificación <span className="text-red-500">*</span></label>
           <select name="tipo" required defaultValue={compra?.tipo ?? ''} className={SELECT}>
             <option value="" disabled>Selecciona</option>
             {TIPOS.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
       </div>
+
+      {/* Proveedor + Crédito */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Proveedor <span className="text-red-500">*</span></label>
+          <input name="proveedor" type="text" required defaultValue={compra?.proveedor ?? ''} placeholder="Nombre del proveedor" className={INPUT} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Crédito proveedor</label>
+          <select
+            name="plazo_pago_proveedor" value={plazo}
+            onChange={(e) => setPlazo(e.target.value)}
+            className={SELECT}
+          >
+            {PLAZOS.map((p) => <option key={p} value={p}>{p === 0 ? 'Contado' : `${p} días`}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {plazo !== '0' && (
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-accent/10 rounded-xl text-sm text-accent font-medium">
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Se registrará en cartera de proveedores con {plazo} días de plazo
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">Descripción <span className="text-red-500">*</span></label>
@@ -85,7 +133,7 @@ function CamposCompra({ state, formAction, pending, compra, isEdit, onClose, hoy
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">N° factura proveedor</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">N° {tipoDocCompra === 'Factura' ? 'factura' : 'documento'}</label>
           <input name="numero_factura" type="text" defaultValue={compra?.numero_factura ?? ''} placeholder="001-001-00000001" className={INPUT} />
         </div>
         <div>
@@ -103,21 +151,29 @@ function CamposCompra({ state, formAction, pending, compra, isEdit, onClose, hoy
             placeholder="0.00" className={INPUT}
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">IVA 15%</label>
-          <input
-            name="iva" type="number" min="0" step="0.01"
-            value={ivaVal} onChange={(e) => setIvaVal(e.target.value)}
-            placeholder="0.00" className={INPUT}
-          />
-        </div>
-        <div>
+        {tipoDocCompra === 'Factura' ? (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">IVA 15%</label>
+            <input
+              name="iva" type="number" min="0" step="0.01"
+              value={ivaVal} onChange={(e) => setIvaVal(e.target.value)}
+              placeholder="0.00" className={INPUT}
+            />
+          </div>
+        ) : (
+          <input type="hidden" name="iva" value="0" />
+        )}
+        <div className={tipoDocCompra !== 'Factura' ? 'col-span-2' : ''}>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Total</label>
           <div className="w-full px-4 py-2.5 rounded-xl border border-gray-100 bg-gray-50 text-sm font-bold text-gray-900">
             ${total}
           </div>
         </div>
       </div>
+
+      {tipoDocCompra !== 'Factura' && (
+        <p className="text-xs text-gray-400">Nota de Venta: sin IVA</p>
+      )}
 
       <div className="flex gap-3 pt-1">
         <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">

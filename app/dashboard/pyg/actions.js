@@ -1,0 +1,71 @@
+'use server'
+
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { getProfile } from '@/lib/getProfile'
+
+export async function getDatosPyg(mes, ano) {
+  const profile = await getProfile()
+  if (!profile) return { error: 'No autorizado' }
+
+  const pad = (n) => String(n).padStart(2, '0')
+  const finDia = (a, m) => new Date(a, m, 0).getDate()
+
+  const rangoActual = { desde: `${ano}-${pad(mes)}-01`, hasta: `${ano}-${pad(mes)}-${pad(finDia(ano, mes))}` }
+  const mesPrev = mes === 1 ? 12 : mes - 1
+  const anoPrev = mes === 1 ? ano - 1 : ano
+  const rangoAnterior = { desde: `${anoPrev}-${pad(mesPrev)}-01`, hasta: `${anoPrev}-${pad(mesPrev)}-${pad(finDia(anoPrev, mesPrev))}` }
+
+  const [ventasAct, ventasPrev, comprasAct, comprasPrev, activos] = await Promise.all([
+    supabaseAdmin.from('ventas').select('total').eq('tenant_id', profile.tenant_id)
+      .gte('fecha', rangoActual.desde).lte('fecha', rangoActual.hasta).eq('anulada', false),
+    supabaseAdmin.from('ventas').select('total').eq('tenant_id', profile.tenant_id)
+      .gte('fecha', rangoAnterior.desde).lte('fecha', rangoAnterior.hasta).eq('anulada', false),
+    supabaseAdmin.from('compras').select('total,tipo,descripcion').eq('tenant_id', profile.tenant_id)
+      .gte('fecha', rangoActual.desde).lte('fecha', rangoActual.hasta),
+    supabaseAdmin.from('compras').select('total,tipo,descripcion').eq('tenant_id', profile.tenant_id)
+      .gte('fecha', rangoAnterior.desde).lte('fecha', rangoAnterior.hasta),
+    supabaseAdmin.from('activos_fijos').select('valor_adquisicion,vida_util_anos,fecha_compra')
+      .eq('tenant_id', profile.tenant_id).eq('activo', true),
+  ])
+
+  const sum = (arr) => (arr ?? []).reduce((s, r) => s + Number(r.total ?? 0), 0)
+  const filtrar = (arr, tipo, soloNomina) =>
+    (arr ?? []).filter((r) => {
+      if (r.tipo !== tipo) return false
+      const esNomina = r.descripcion?.startsWith('Pago nómina:')
+      if (soloNomina === true) return esNomina
+      if (soloNomina === false) return !esNomina
+      return true
+    })
+
+  const calcDeprecMensual = (activos) =>
+    (activos ?? []).reduce((acc, a) => {
+      const mesesVida = Number(a.vida_util_anos) * 12
+      if (mesesVida <= 0) return acc
+      const hoy = new Date()
+      const compra = new Date(a.fecha_compra + 'T00:00:00')
+      const mesesUsados = Math.max(0,
+        (hoy.getFullYear() - compra.getFullYear()) * 12 + (hoy.getMonth() - compra.getMonth())
+      )
+      if (mesesUsados >= mesesVida) return acc
+      return acc + Number(a.valor_adquisicion) / mesesVida
+    }, 0)
+
+  const deprecMensual = calcDeprecMensual(activos.data)
+
+  const calcular = (ventas, compras) => {
+    const ingresos = sum(ventas)
+    const costoVentas = sum(filtrar(compras, 'Costo'))
+    const gastosOp = sum(filtrar(compras, 'Gasto', false))
+    const nomina = sum(filtrar(compras, 'Gasto', true))
+    const utilBruta = ingresos - costoVentas
+    const utilNeta = utilBruta - gastosOp - nomina - deprecMensual
+    return { ingresos, costoVentas, utilBruta, gastosOp, nomina, deprecMensual, utilNeta }
+  }
+
+  return {
+    actual: calcular(ventasAct.data, comprasAct.data),
+    anterior: calcular(ventasPrev.data, comprasPrev.data),
+    periodo: { mes, ano, mesPrev, anoPrev },
+  }
+}

@@ -238,6 +238,7 @@ function FormVenta({ clientes, servicios, ivaAplica, nextNumero, hoy, onClose })
   const [items, setItems] = useState([{ servicio_id: '', descripcion: '', cantidad: 1, precio_unitario: 0 }])
   const [clienteId, setClienteId] = useState('')
   const [tipoDoc, setTipoDoc] = useState('Nota de Venta')
+  const [fecha, setFecha] = useState(hoy)
   const [descuentoValor, setDescuentoValor] = useState('0')
   const [tipoPago, setTipoPago] = useState('Efectivo')
   const [referencia, setReferencia] = useState('')
@@ -278,13 +279,14 @@ function FormVenta({ clientes, servicios, ivaAplica, nextNumero, hoy, onClose })
       const result = await crearVenta({
         tipo_documento: tipoDoc,
         cliente_id: clienteId || null,
-        fecha: hoy,
+        fecha,
         items: items.filter((i) => i.descripcion),
         descuento_valor: descuento,
         tipo_pago: tipoPago,
         monto_pagado: pagado || total,
         observaciones: obs,
         iva_aplica: ivaAplica,
+        plazo_credito: plazoCredito,
       })
       if (result?.error) { setError(result.error); return }
       onClose()
@@ -306,6 +308,19 @@ function FormVenta({ clientes, servicios, ivaAplica, nextNumero, hoy, onClose })
       </div>
 
       {error && <p className="px-3.5 py-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm">{error}</p>}
+
+      {/* Fecha */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Fecha de venta</label>
+        <input
+          type="date" value={fecha} max={hoy}
+          onChange={(e) => setFecha(e.target.value)}
+          className={INPUT}
+        />
+        {fecha !== hoy && (
+          <p className="text-xs text-amber-600 mt-1">Ingresando venta histórica para {new Date(fecha + 'T00:00:00').toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+        )}
+      </div>
 
       {/* Documento y cliente */}
       <div className="grid grid-cols-2 gap-4">

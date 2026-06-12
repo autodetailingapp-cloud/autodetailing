@@ -118,6 +118,63 @@ const NAV_ITEMS = {
       ),
     },
     {
+      key: 'pyg',
+      label: 'P&G',
+      href: '/dashboard/pyg',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+      ),
+    },
+    {
+      key: 'balance',
+      label: 'Balance',
+      href: '/dashboard/balance',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+            d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+        </svg>
+      ),
+    },
+    {
+      key: 'flujo',
+      label: 'Flujo de caja',
+      href: '/dashboard/flujo',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+            d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      ),
+    },
+    {
+      key: 'kpi',
+      label: 'KPI',
+      href: '/dashboard/kpi',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+            d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+            d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+        </svg>
+      ),
+    },
+    {
+      key: 'tributario',
+      label: 'Tributario SRI',
+      href: '/dashboard/tributario',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      ),
+    },
+    {
       key: 'configuracion',
       label: 'Configuración',
       href: '/dashboard/configuracion',
@@ -133,7 +190,7 @@ const NAV_ITEMS = {
   ],
   supervisor: ['dashboard', 'servicios', 'clientes', 'ventas', 'compras', 'caja', 'cartera', 'nomina', 'reportes'],
   cajero: ['dashboard', 'servicios', 'clientes', 'ventas', 'caja'],
-  lectura: ['dashboard', 'cartera', 'nomina', 'activos', 'reportes'],
+  lectura: ['dashboard', 'cartera', 'nomina', 'activos', 'reportes', 'pyg', 'balance', 'flujo', 'kpi', 'tributario'],
 }
 
 const ROL_LABELS = {
