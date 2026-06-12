@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useOptimistic, useTransition, useActionState } from 'react'
-import { crearCliente, actualizarCliente, toggleCliente, getHistorialCliente } from './actions'
+import { crearCliente, actualizarCliente, toggleCliente, eliminarCliente, getHistorialCliente } from './actions'
 
 const TIPOS_DOC = ['Cédula', 'RUC', 'Pasaporte']
 const TIPOS_CONTRIB = ['Consumidor Final', 'RIMPE', 'RUC']
@@ -293,17 +293,55 @@ function ModalHistorial({ cliente, onClose }) {
   )
 }
 
+function ModalConfirmar({ nombre, onConfirm, onCancel, pending }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative z-10 w-full max-w-sm bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
+        <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-red-50 mb-4 mx-auto">
+          <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </div>
+        <h3 className="text-base font-bold text-gray-900 text-center mb-1">Eliminar cliente</h3>
+        <p className="text-sm text-gray-500 text-center mb-6">
+          ¿Seguro que deseas eliminar a <span className="font-semibold text-gray-800">"{nombre}"</span>? Esta acción no se puede deshacer.
+        </p>
+        <div className="flex gap-3">
+          <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+            Cancelar
+          </button>
+          <button onClick={onConfirm} disabled={pending} className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition-colors disabled:opacity-60">
+            {pending ? 'Eliminando...' : 'Eliminar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ClientesUI({ clientes }) {
   const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [historialCliente, setHistorialCliente] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(null)
+  const [deletePending, setDeletePending] = useState(false)
 
   const closeModal = () => { setModalOpen(false); setEditing(null) }
   const openCreate = () => { setEditing(null); setModalOpen(true) }
   const openEdit = (c) => { setEditing(c); setModalOpen(true) }
   const openHistorial = (c) => setHistorialCliente(c)
   const closeHistorial = () => setHistorialCliente(null)
+
+  async function handleDelete() {
+    if (!confirmDelete) return
+    setDeletePending(true)
+    await eliminarCliente(confirmDelete.id)
+    setDeletePending(false)
+    setConfirmDelete(null)
+  }
 
   const filtrados = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -475,6 +513,16 @@ export default function ClientesUI({ clientes }) {
                               d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </button>
+                        <button
+                          onClick={() => setConfirmDelete(c)}
+                          title="Eliminar"
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -494,24 +542,24 @@ export default function ClientesUI({ clientes }) {
                       {c.tipo_documento} · {c.ruc_cedula}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
                     <ToggleActivo id={c.id} activo={c.activo} />
-                    <button
-                      onClick={() => openHistorial(c)}
-                      className="p-1.5 text-gray-400 hover:text-accent transition-colors"
-                    >
+                    <button onClick={() => openHistorial(c)} className="p-1.5 text-gray-400 hover:text-accent transition-colors">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                     </button>
-                    <button
-                      onClick={() => openEdit(c)}
-                      className="p-1.5 text-gray-400 hover:text-brand transition-colors"
-                    >
+                    <button onClick={() => openEdit(c)} className="p-1.5 text-gray-400 hover:text-brand transition-colors">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
                           d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button onClick={() => setConfirmDelete(c)} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     </button>
                   </div>
@@ -558,6 +606,16 @@ export default function ClientesUI({ clientes }) {
             <ModalHistorial cliente={historialCliente} onClose={closeHistorial} />
           </div>
         </div>
+      )}
+
+      {/* Modal confirmar eliminación */}
+      {confirmDelete && (
+        <ModalConfirmar
+          nombre={confirmDelete.nombre}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmDelete(null)}
+          pending={deletePending}
+        />
       )}
     </>
   )

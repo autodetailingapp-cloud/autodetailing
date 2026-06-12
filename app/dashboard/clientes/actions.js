@@ -95,6 +95,31 @@ export async function toggleCliente(id, activo) {
   return { success: true }
 }
 
+export async function eliminarCliente(id) {
+  const profile = await getProfile()
+  if (!profile) return { error: 'No autorizado' }
+
+  const { count } = await supabaseAdmin
+    .from('ventas')
+    .select('id', { count: 'exact', head: true })
+    .eq('cliente_id', id)
+    .eq('tenant_id', profile.tenant_id)
+
+  if (count && count > 0)
+    return { error: `No se puede eliminar: este cliente tiene ${count} venta(s) registrada(s). Desactívalo en su lugar.` }
+
+  const { error } = await supabaseAdmin
+    .from('clientes')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', profile.tenant_id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/dashboard/clientes')
+  return { success: true }
+}
+
 export async function getHistorialCliente(clienteId) {
   const profile = await getProfile()
   if (!profile) return { ventas: [] }

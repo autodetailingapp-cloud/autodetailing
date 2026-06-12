@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useOptimistic, useTransition, useActionState } from 'react'
-import { crearServicio, actualizarServicio, toggleServicio } from './actions'
+import { crearServicio, actualizarServicio, toggleServicio, eliminarServicio } from './actions'
 
 const fmtPrecio = (n) => `$${Number(n).toFixed(2)}`
 const fmtMins = (m) => {
@@ -133,13 +133,58 @@ function FormEditar({ servicio, onClose }) {
   return <CamposServicio state={state} formAction={formAction} pending={pending} servicio={servicio} isEdit onClose={onClose} />
 }
 
+function ModalConfirmar({ nombre, onConfirm, onCancel, pending }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative z-10 w-full max-w-sm bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
+        <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-red-50 mb-4 mx-auto">
+          <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </div>
+        <h3 className="text-base font-bold text-gray-900 text-center mb-1">Eliminar servicio</h3>
+        <p className="text-sm text-gray-500 text-center mb-6">
+          ¿Seguro que deseas eliminar <span className="font-semibold text-gray-800">"{nombre}"</span>? Esta acción no se puede deshacer.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={pending}
+            className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition-colors disabled:opacity-60"
+          >
+            {pending ? 'Eliminando...' : 'Eliminar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ServiciosUI({ servicios }) {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(null)
+  const [deletePending, setDeletePending] = useState(false)
 
   const closeModal = () => { setModalOpen(false); setEditing(null) }
   const openCreate = () => { setEditing(null); setModalOpen(true) }
   const openEdit = (s) => { setEditing(s); setModalOpen(true) }
+
+  async function handleDelete() {
+    if (!confirmDelete) return
+    setDeletePending(true)
+    await eliminarServicio(confirmDelete.id)
+    setDeletePending(false)
+    setConfirmDelete(null)
+  }
 
   const totalActivos = servicios.filter((s) => s.activo).length
 
@@ -221,16 +266,28 @@ export default function ServiciosUI({ servicios }) {
                       <ToggleActivo id={s.id} activo={s.activo} />
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => openEdit(s)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-brand hover:bg-brand-light rounded-lg transition-colors"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Editar
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => openEdit(s)}
+                          title="Editar"
+                          className="p-1.5 text-gray-400 hover:text-brand hover:bg-brand-light rounded-lg transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => setConfirmDelete(s)}
+                          title="Eliminar"
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -254,15 +311,24 @@ export default function ServiciosUI({ servicios }) {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-3 flex-shrink-0">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <ToggleActivo id={s.id} activo={s.activo} />
                   <button
                     onClick={() => openEdit(s)}
                     className="p-1.5 text-gray-400 hover:text-brand transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
                         d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(s)}
+                    className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                   </button>
                 </div>
@@ -272,7 +338,7 @@ export default function ServiciosUI({ servicios }) {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Modal crear/editar */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
@@ -286,6 +352,16 @@ export default function ServiciosUI({ servicios }) {
             }
           </div>
         </div>
+      )}
+
+      {/* Modal confirmar eliminación */}
+      {confirmDelete && (
+        <ModalConfirmar
+          nombre={confirmDelete.nombre}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmDelete(null)}
+          pending={deletePending}
+        />
       )}
     </>
   )

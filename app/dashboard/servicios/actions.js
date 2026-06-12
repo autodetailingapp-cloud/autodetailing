@@ -68,3 +68,27 @@ export async function toggleServicio(id, activo) {
   revalidatePath('/dashboard/servicios')
   return { success: true }
 }
+
+export async function eliminarServicio(id) {
+  const profile = await getProfile()
+  if (!profile) return { error: 'No autorizado' }
+
+  const { count } = await supabaseAdmin
+    .from('detalle_ventas')
+    .select('id', { count: 'exact', head: true })
+    .eq('servicio_id', id)
+
+  if (count && count > 0)
+    return { error: `No se puede eliminar: este servicio está en ${count} venta(s). Desactívalo en su lugar.` }
+
+  const { error } = await supabaseAdmin
+    .from('servicios')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', profile.tenant_id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/dashboard/servicios')
+  return { success: true }
+}
