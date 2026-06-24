@@ -44,6 +44,15 @@ export async function getDatosPyg(mes, ano) {
       return true
     })
 
+  // Las entradas de stock registradas desde Inventario crean automáticamente
+  // una compra tipo "Costo" (descripción "Compra insumo: ..."). Esa compra es
+  // el costo de adquisición, no el costo de venta — el costo de venta real ya
+  // se calcula por separado vía costo_insumos_periodo (insumos efectivamente
+  // consumidos en ventas). Se excluyen aquí para no duplicar el Costo de Ventas.
+  const esCompraInsumoAutomatica = (r) => r.descripcion?.startsWith('Compra insumo:')
+  const filtrarCostoManual = (arr) =>
+    filtrar(arr, 'Costo').filter((r) => !esCompraInsumoAutomatica(r))
+
   const calcDeprecMensual = (activos) =>
     (activos ?? []).reduce((acc, a) => {
       const mesesVida = Number(a.vida_util_anos) * 12
@@ -61,12 +70,17 @@ export async function getDatosPyg(mes, ano) {
 
   const calcular = (ventas, compras, costoInsumos) => {
     const ingresos = sum(ventas)
-    const costoVentas = sum(filtrar(compras, 'Costo')) + Number(costoInsumos ?? 0)
+    const costoComprasDirectas = sum(filtrarCostoManual(compras))
+    const costoInsumosConsumidos = Number(costoInsumos ?? 0)
+    const costoVentas = costoComprasDirectas + costoInsumosConsumidos
     const gastosOp = sum(filtrar(compras, 'Gasto', false))
     const nomina = sum(filtrar(compras, 'Gasto', true))
     const utilBruta = ingresos - costoVentas
     const utilNeta = utilBruta - gastosOp - nomina - deprecMensual
-    return { ingresos, costoVentas, utilBruta, gastosOp, nomina, deprecMensual, utilNeta }
+    return {
+      ingresos, costoVentas, costoComprasDirectas, costoInsumosConsumidos,
+      utilBruta, gastosOp, nomina, deprecMensual, utilNeta,
+    }
   }
 
   return {

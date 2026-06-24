@@ -117,6 +117,17 @@ export default function PygUI({ datos: datosInit, mesInicial, anoInicial }) {
 
       {pending && <div className="text-center py-4 text-sm text-gray-400">Calculando...</div>}
 
+      <div className="flex items-start gap-2 px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700 mb-4 print:hidden">
+        <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>
+          El Costo de ventas combina las compras tipo Costo registradas manualmente y el costo de los insumos de
+          inventario realmente consumidos en las ventas del período (sin duplicar: las entradas de stock registradas
+          desde Inventario no se cuentan aquí como compra, solo cuando se consumen).
+        </span>
+      </div>
+
       {/* Tabla P&G */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <table className="w-full">
@@ -136,7 +147,9 @@ export default function PygUI({ datos: datosInit, mesInicial, anoInicial }) {
             <Fila label="Ventas netas" valor={a.ingresos} valorPrev={ant?.ingresos} bold />
 
             <Separador label="Costos directos" />
-            <Fila label="Costo de ventas" valor={a.costoVentas} valorPrev={ant?.costoVentas} indent />
+            <Fila label="Costo de ventas (total)" valor={a.costoVentas} valorPrev={ant?.costoVentas} indent bold />
+            <Fila label="— Compras directas (insumos no inventariados)" valor={a.costoComprasDirectas} valorPrev={ant?.costoComprasDirectas} indent />
+            <Fila label="— Insumos consumidos de inventario" valor={a.costoInsumosConsumidos} valorPrev={ant?.costoInsumosConsumidos} indent />
 
             <tr className="bg-green-50/60">
               <td className="py-3 pl-4 text-sm font-bold text-gray-900">Utilidad bruta</td>

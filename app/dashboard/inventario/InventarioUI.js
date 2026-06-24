@@ -368,7 +368,7 @@ function ModalConfirmar({ nombre, onConfirm, onCancel, pending }) {
   )
 }
 
-export default function InventarioUI({ insumos, alertas, valorInventario, rankingCosto, rankingMargen, readOnly }) {
+export default function InventarioUI({ insumos, alertas, valorInventario, rankingCosto, rankingMargen, readOnly, entradaInicialId }) {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [entradaOpen, setEntradaOpen] = useState(false)
@@ -376,6 +376,15 @@ export default function InventarioUI({ insumos, alertas, valorInventario, rankin
   const [historialInsumo, setHistorialInsumo] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [deletePending, setDeletePending] = useState(false)
+
+  useEffect(() => {
+    if (!entradaInicialId || readOnly) return
+    const insumo = insumos.find((i) => i.id === entradaInicialId)
+    if (insumo) {
+      setEntradaPre(insumo)
+      setEntradaOpen(true)
+    }
+  }, [entradaInicialId]) // eslint-disable-line
 
   const closeModal = () => { setModalOpen(false); setEditing(null) }
   const openCreate = () => { setEditing(null); setModalOpen(true) }

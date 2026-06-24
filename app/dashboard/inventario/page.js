@@ -6,9 +6,11 @@ import InventarioUI from './InventarioUI'
 
 export const metadata = { title: 'Inventario — AutoDetailing Manager' }
 
-export default async function InventarioPage() {
+export default async function InventarioPage({ searchParams }) {
   const profile = await getProfile()
   if (!profile) redirect('/login')
+
+  const { entrada } = await searchParams
 
   const [insumosRes, serviciosRes, servicioInsumosRes] = await Promise.all([
     supabaseAdmin
@@ -65,6 +67,7 @@ export default async function InventarioPage() {
             rankingCosto={rankingCosto}
             rankingMargen={rankingMargen}
             readOnly={profile.rol === 'lectura'}
+            entradaInicialId={entrada ?? null}
           />
         </div>
       </main>
