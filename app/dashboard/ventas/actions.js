@@ -88,6 +88,12 @@ export async function crearVenta(data) {
   const { error: detErr } = await supabaseAdmin.from('detalle_ventas').insert(detalles)
   if (detErr) return { error: 'Venta creada pero error en detalle: ' + detErr.message }
 
+  // Descontar insumos consumidos según la receta de cada servicio vendido
+  await supabaseAdmin.rpc('descontar_inventario_venta', {
+    p_venta_id: venta.id,
+    p_tenant_id: profile.tenant_id,
+  })
+
   // Si es crédito y hay cliente, crear entrada en cartera
   if (tipo_pago === 'Crédito' && cliente_id) {
     const plazo = parseInt(plazo_credito) || 30
@@ -116,6 +122,7 @@ export async function crearVenta(data) {
   revalidatePath('/dashboard/ventas')
   revalidatePath('/dashboard/caja')
   revalidatePath('/dashboard/cartera')
+  revalidatePath('/dashboard/inventario')
   return { success: true, numero_documento }
 }
 
@@ -134,6 +141,7 @@ export async function anularVenta(id) {
   revalidatePath('/dashboard/ventas')
   revalidatePath('/dashboard/caja')
   revalidatePath('/dashboard/cartera')
+  revalidatePath('/dashboard/inventario')
   return { success: true }
 }
 

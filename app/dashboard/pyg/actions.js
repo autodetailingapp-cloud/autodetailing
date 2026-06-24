@@ -15,7 +15,7 @@ export async function getDatosPyg(mes, ano) {
   const anoPrev = mes === 1 ? ano - 1 : ano
   const rangoAnterior = { desde: `${anoPrev}-${pad(mesPrev)}-01`, hasta: `${anoPrev}-${pad(mesPrev)}-${pad(finDia(anoPrev, mesPrev))}` }
 
-  const [ventasAct, ventasPrev, comprasAct, comprasPrev, activos] = await Promise.all([
+  const [ventasAct, ventasPrev, comprasAct, comprasPrev, activos, costoInsumosAct, costoInsumosPrev] = await Promise.all([
     supabaseAdmin.from('ventas').select('total').eq('tenant_id', profile.tenant_id)
       .gte('fecha', rangoActual.desde).lte('fecha', rangoActual.hasta).eq('anulada', false),
     supabaseAdmin.from('ventas').select('total').eq('tenant_id', profile.tenant_id)
@@ -26,6 +26,12 @@ export async function getDatosPyg(mes, ano) {
       .gte('fecha', rangoAnterior.desde).lte('fecha', rangoAnterior.hasta),
     supabaseAdmin.from('activos_fijos').select('valor_adquisicion,vida_util_anos,fecha_compra')
       .eq('tenant_id', profile.tenant_id).eq('activo', true),
+    supabaseAdmin.rpc('costo_insumos_periodo', {
+      p_tenant_id: profile.tenant_id, p_desde: rangoActual.desde, p_hasta: rangoActual.hasta,
+    }),
+    supabaseAdmin.rpc('costo_insumos_periodo', {
+      p_tenant_id: profile.tenant_id, p_desde: rangoAnterior.desde, p_hasta: rangoAnterior.hasta,
+    }),
   ])
 
   const sum = (arr) => (arr ?? []).reduce((s, r) => s + Number(r.total ?? 0), 0)
@@ -53,9 +59,9 @@ export async function getDatosPyg(mes, ano) {
 
   const deprecMensual = calcDeprecMensual(activos.data)
 
-  const calcular = (ventas, compras) => {
+  const calcular = (ventas, compras, costoInsumos) => {
     const ingresos = sum(ventas)
-    const costoVentas = sum(filtrar(compras, 'Costo'))
+    const costoVentas = sum(filtrar(compras, 'Costo')) + Number(costoInsumos ?? 0)
     const gastosOp = sum(filtrar(compras, 'Gasto', false))
     const nomina = sum(filtrar(compras, 'Gasto', true))
     const utilBruta = ingresos - costoVentas
@@ -64,8 +70,8 @@ export async function getDatosPyg(mes, ano) {
   }
 
   return {
-    actual: calcular(ventasAct.data, comprasAct.data),
-    anterior: calcular(ventasPrev.data, comprasPrev.data),
+    actual: calcular(ventasAct.data, comprasAct.data, costoInsumosAct.data),
+    anterior: calcular(ventasPrev.data, comprasPrev.data, costoInsumosPrev.data),
     periodo: { mes, ano, mesPrev, anoPrev },
   }
 }
