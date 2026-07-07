@@ -12,11 +12,15 @@ export async function crearVenta(data) {
     tipo_documento, cliente_id, fecha, items,
     descuento_valor, tipo_pago, monto_pagado,
     observaciones, plazo_credito,
+    factura_nombre, factura_ruc_cedula, factura_direccion, factura_email,
   } = data
 
   if (!tipo_documento) return { error: 'El tipo de documento es requerido' }
   if (!items || items.length === 0) return { error: 'Agrega al menos un servicio' }
   if (!tipo_pago) return { error: 'El tipo de pago es requerido' }
+  if (tipo_pago === 'Crédito' && !cliente_id) return { error: 'La venta a crédito requiere un cliente registrado' }
+  if (tipo_documento === 'Factura' && !cliente_id && (!factura_nombre || !factura_ruc_cedula))
+    return { error: 'Nombre y cédula/RUC son requeridos para emitir la factura' }
 
   const fechaVenta = fecha || new Date().toISOString().split('T')[0]
 
@@ -69,6 +73,10 @@ export async function crearVenta(data) {
       estado: 'activa',
       observaciones: observaciones || null,
       created_by: profile.id,
+      factura_nombre: !cliente_id ? (factura_nombre || null) : null,
+      factura_ruc_cedula: !cliente_id ? (factura_ruc_cedula || null) : null,
+      factura_direccion: !cliente_id ? (factura_direccion || null) : null,
+      factura_email: !cliente_id ? (factura_email || null) : null,
     })
     .select('id')
     .single()
@@ -142,6 +150,35 @@ export async function anularVenta(id) {
   revalidatePath('/dashboard/caja')
   revalidatePath('/dashboard/cartera')
   revalidatePath('/dashboard/inventario')
+  return { success: true }
+}
+
+export async function guardarClienteDesdeFactura({ nombre, ruc_cedula, direccion, email }) {
+  const profile = await getProfile()
+  if (!profile) return { error: 'No autorizado' }
+
+  if (!nombre) return { error: 'El nombre es requerido' }
+  if (!ruc_cedula) return { error: 'La cédula/RUC es requerida' }
+
+  const tipo_documento = ruc_cedula.length === 13 ? 'RUC' : 'Cédula'
+
+  const { error } = await supabaseAdmin.from('clientes').insert({
+    tenant_id: profile.tenant_id,
+    nombre,
+    ruc_cedula,
+    tipo_documento,
+    direccion: direccion || null,
+    email: email || null,
+    tipo_contribuyente: 'Consumidor Final',
+    plazo_credito: 0,
+    limite_credito: 0,
+    activo: true,
+  })
+
+  if (error) return { error: 'Error al guardar el cliente: ' + error.message }
+
+  revalidatePath('/dashboard/clientes')
+  revalidatePath('/dashboard/ventas')
   return { success: true }
 }
 

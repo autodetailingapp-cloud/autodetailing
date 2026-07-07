@@ -1,13 +1,12 @@
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
-import { crearVenta, anularVenta, getDetalleVenta } from './actions'
+import { crearVenta, anularVenta, getDetalleVenta, guardarClienteDesdeFactura } from './actions'
 
 const fmt = (n) => `$${Number(n ?? 0).toFixed(2)}`
 const fmtFecha = (s) =>
   s ? new Date(s + 'T00:00:00').toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
-const TIPOS_DOC = ['Nota de Venta', 'Factura']
 const TIPOS_PAGO = ['Efectivo', 'Transferencia', 'Crédito']
 
 const ESTADO_BADGE = {
@@ -78,7 +77,10 @@ function ModalDetalle({ ventaId, onClose, onAnular }) {
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="bg-gray-50 rounded-xl p-3">
               <p className="text-xs text-gray-400 mb-0.5">Cliente</p>
-              <p className="font-medium text-gray-800">{v.clientes?.nombre ?? 'Consumidor Final'}</p>
+              <p className="font-medium text-gray-800">{v.clientes?.nombre ?? v.factura_nombre ?? 'Consumidor Final'}</p>
+              {!v.clientes && v.factura_ruc_cedula && (
+                <p className="text-xs text-gray-400 mt-0.5">{v.factura_ruc_cedula}</p>
+              )}
             </div>
             <div className="bg-gray-50 rounded-xl p-3">
               <p className="text-xs text-gray-400 mb-0.5">Tipo documento</p>
@@ -236,8 +238,13 @@ function FormVenta({ clientes, servicios, ivaAplica, nextNumero, hoy, onClose })
   const SELECT = INPUT + ' bg-white'
 
   const [items, setItems] = useState([{ servicio_id: '', descripcion: '', cantidad: 1, precio_unitario: 0 }])
+  const [modoCliente, setModoCliente] = useState('final') // 'final' | 'registrado'
   const [clienteId, setClienteId] = useState('')
-  const [tipoDoc, setTipoDoc] = useState('Nota de Venta')
+  const [pideFactura, setPideFactura] = useState(false)
+  const [facturaNombre, setFacturaNombre] = useState('')
+  const [facturaRuc, setFacturaRuc] = useState('')
+  const [facturaDireccion, setFacturaDireccion] = useState('')
+  const [facturaEmail, setFacturaEmail] = useState('')
   const [fecha, setFecha] = useState(hoy)
   const [descuentoValor, setDescuentoValor] = useState('0')
   const [tipoPago, setTipoPago] = useState('Efectivo')
@@ -246,9 +253,22 @@ function FormVenta({ clientes, servicios, ivaAplica, nextNumero, hoy, onClose })
   const [observaciones, setObservaciones] = useState('')
   const [error, setError] = useState(null)
   const [isPending, startTransition] = useTransition()
+  const [ventaGuardada, setVentaGuardada] = useState(null)
+  const [guardandoCliente, setGuardandoCliente] = useState(false)
+  const [clienteGuardado, setClienteGuardado] = useState(false)
 
-  const clienteSeleccionado = clientes.find((c) => c.id === clienteId)
+  const tipoDoc = pideFactura ? 'Factura' : 'Nota de Venta'
+  const clienteSeleccionado = modoCliente === 'registrado' ? clientes.find((c) => c.id === clienteId) : null
   const plazoCredito = clienteSeleccionado?.plazo_credito ?? 0
+  const creditoDisponible = modoCliente === 'registrado' && !!clienteSeleccionado && plazoCredito > 0
+
+  useEffect(() => {
+    if (tipoPago === 'Crédito' && !creditoDisponible) setTipoPago('Efectivo')
+  }, [creditoDisponible, tipoPago])
+
+  useEffect(() => {
+    setClienteId('')
+  }, [modoCliente])
 
   const subtotal = items.reduce((s, i) => s + i.cantidad * i.precio_unitario, 0)
   const descuento = parseFloat(descuentoValor) || 0
@@ -269,16 +289,26 @@ function FormVenta({ clientes, servicios, ivaAplica, nextNumero, hoy, onClose })
     e.preventDefault()
     setError(null)
     if (items.every((i) => !i.descripcion)) { setError('Agrega al menos un servicio'); return }
+    if (tipoPago === 'Crédito' && !creditoDisponible) {
+      setError('Selecciona un cliente registrado con crédito configurado para pagar a crédito')
+      return
+    }
+    if (pideFactura && modoCliente === 'final' && (!facturaNombre.trim() || !facturaRuc.trim())) {
+      setError('Nombre y cédula/RUC son requeridos para emitir la factura')
+      return
+    }
 
     const obs = [
       tipoPago === 'Transferencia' && referencia ? `Ref. bancaria: ${referencia}` : null,
       observaciones,
     ].filter(Boolean).join(' | ') || null
 
+    const esFacturaRapida = pideFactura && modoCliente === 'final'
+
     startTransition(async () => {
       const result = await crearVenta({
         tipo_documento: tipoDoc,
-        cliente_id: clienteId || null,
+        cliente_id: modoCliente === 'registrado' ? (clienteId || null) : null,
         fecha,
         items: items.filter((i) => i.descripcion),
         descuento_valor: descuento,
@@ -287,10 +317,74 @@ function FormVenta({ clientes, servicios, ivaAplica, nextNumero, hoy, onClose })
         observaciones: obs,
         iva_aplica: ivaAplica,
         plazo_credito: plazoCredito,
+        factura_nombre: esFacturaRapida ? facturaNombre.trim() : null,
+        factura_ruc_cedula: esFacturaRapida ? facturaRuc.trim() : null,
+        factura_direccion: esFacturaRapida ? (facturaDireccion.trim() || null) : null,
+        factura_email: esFacturaRapida ? (facturaEmail.trim() || null) : null,
       })
       if (result?.error) { setError(result.error); return }
-      onClose()
+
+      if (esFacturaRapida) {
+        setVentaGuardada({ numero_documento: result.numero_documento })
+      } else {
+        onClose()
+      }
     })
+  }
+
+  async function handleGuardarCliente() {
+    setGuardandoCliente(true)
+    const result = await guardarClienteDesdeFactura({
+      nombre: facturaNombre.trim(),
+      ruc_cedula: facturaRuc.trim(),
+      direccion: facturaDireccion.trim() || null,
+      email: facturaEmail.trim() || null,
+    })
+    setGuardandoCliente(false)
+    if (result?.error) { setError(result.error); return }
+    setClienteGuardado(true)
+  }
+
+  if (ventaGuardada) {
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-green-50 mx-auto">
+          <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <div className="text-center">
+          <h2 className="text-lg font-bold text-gray-900">Venta #{ventaGuardada.numero_documento} registrada</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            {clienteGuardado
+              ? 'El cliente fue guardado en la base de datos.'
+              : `¿Deseas guardar a ${facturaNombre} en tu base de clientes para tus próximas ventas?`}
+          </p>
+        </div>
+        {!clienteGuardado && error && (
+          <p className="px-3.5 py-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm">{error}</p>
+        )}
+        <div className="flex gap-3 pt-1">
+          {clienteGuardado ? (
+            <button onClick={onClose} className="flex-1 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors">
+              Cerrar
+            </button>
+          ) : (
+            <>
+              <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+                No, gracias
+              </button>
+              <button
+                onClick={handleGuardarCliente} disabled={guardandoCliente}
+                className="flex-1 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors disabled:opacity-60"
+              >
+                {guardandoCliente ? 'Guardando...' : 'Guardar cliente'}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -322,22 +416,81 @@ function FormVenta({ clientes, servicios, ivaAplica, nextNumero, hoy, onClose })
         )}
       </div>
 
-      {/* Documento y cliente */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Tipo documento <span className="text-red-500">*</span></label>
-          <select value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)} className={SELECT}>
-            {TIPOS_DOC.map((t) => <option key={t}>{t}</option>)}
-          </select>
+      {/* Modo de cliente */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Cliente</label>
+        <div className="flex gap-2">
+          <button
+            type="button" onClick={() => setModoCliente('final')}
+            className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors border ${
+              modoCliente === 'final' ? 'bg-brand text-white border-brand' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            Consumidor Final
+          </button>
+          <button
+            type="button" onClick={() => setModoCliente('registrado')}
+            className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors border ${
+              modoCliente === 'registrado' ? 'bg-brand text-white border-brand' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            Seleccionar cliente registrado
+          </button>
         </div>
+      </div>
+
+      {modoCliente === 'registrado' && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Cliente</label>
           <select value={clienteId} onChange={(e) => setClienteId(e.target.value)} className={SELECT}>
-            <option value="">Consumidor Final</option>
+            <option value="">Selecciona un cliente</option>
             {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
           </select>
         </div>
-      </div>
+      )}
+
+      {/* Pide factura */}
+      <label className="flex items-center gap-2.5 cursor-pointer select-none">
+        <input type="checkbox" checked={pideFactura} onChange={(e) => setPideFactura(e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-brand focus:ring-brand" />
+        <span className="text-sm font-medium text-gray-700">¿El cliente pide factura?</span>
+      </label>
+
+      {pideFactura && modoCliente === 'final' && (
+        <div className="space-y-3 px-4 py-4 bg-gray-50 rounded-xl">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Datos para la factura</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Nombre completo <span className="text-red-500">*</span></label>
+              <input type="text" value={facturaNombre} onChange={(e) => setFacturaNombre(e.target.value)} className={INPUT} placeholder="Nombre del cliente" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Cédula / RUC <span className="text-red-500">*</span></label>
+              <input type="text" value={facturaRuc} onChange={(e) => setFacturaRuc(e.target.value)} className={INPUT} placeholder="0000000000" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Dirección</label>
+              <input type="text" value={facturaDireccion} onChange={(e) => setFacturaDireccion(e.target.value)} className={INPUT} placeholder="Opcional" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
+              <input type="email" value={facturaEmail} onChange={(e) => setFacturaEmail(e.target.value)} className={INPUT} placeholder="Opcional" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pideFactura && modoCliente === 'registrado' && clienteSeleccionado && (
+        <div className="space-y-1 px-4 py-3 bg-gray-50 rounded-xl text-sm">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Datos de factura (cargados automáticamente)</p>
+          <p className="text-gray-700">{clienteSeleccionado.nombre}</p>
+          {clienteSeleccionado.ruc_cedula && <p className="text-gray-500">{clienteSeleccionado.ruc_cedula}</p>}
+          {clienteSeleccionado.direccion && <p className="text-gray-500">{clienteSeleccionado.direccion}</p>}
+          {clienteSeleccionado.email && <p className="text-gray-500">{clienteSeleccionado.email}</p>}
+        </div>
+      )}
+
+      {pideFactura && modoCliente === 'registrado' && !clienteSeleccionado && (
+        <p className="text-xs text-amber-600">Selecciona un cliente registrado para cargar sus datos de factura</p>
+      )}
 
       {/* Servicios */}
       <div>
@@ -383,19 +536,26 @@ function FormVenta({ clientes, servicios, ivaAplica, nextNumero, hoy, onClose })
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">Tipo de pago <span className="text-red-500">*</span></label>
         <div className="flex gap-2">
-          {TIPOS_PAGO.map((t) => (
-            <button
-              key={t} type="button"
-              onClick={() => setTipoPago(t)}
-              className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors border ${
-                tipoPago === t
-                  ? 'bg-brand text-white border-brand'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              {t}
-            </button>
-          ))}
+          {TIPOS_PAGO.map((t) => {
+            const deshabilitado = t === 'Crédito' && !creditoDisponible
+            return (
+              <button
+                key={t} type="button"
+                onClick={() => !deshabilitado && setTipoPago(t)}
+                disabled={deshabilitado}
+                title={deshabilitado ? 'Solo disponible para clientes registrados con crédito configurado' : undefined}
+                className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors border ${
+                  tipoPago === t
+                    ? 'bg-brand text-white border-brand'
+                    : deshabilitado
+                    ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                {t}
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -406,11 +566,9 @@ function FormVenta({ clientes, servicios, ivaAplica, nextNumero, hoy, onClose })
         </div>
       )}
 
-      {tipoPago === 'Crédito' && clienteSeleccionado && (
+      {tipoPago === 'Crédito' && creditoDisponible && (
         <div className="px-4 py-3 bg-accent/10 rounded-xl text-sm">
-          <p className="font-medium text-accent">
-            {plazoCredito > 0 ? `Plazo de crédito: ${plazoCredito} días` : 'Cliente sin plazo de crédito configurado'}
-          </p>
+          <p className="font-medium text-accent">Plazo de crédito: {plazoCredito} días</p>
         </div>
       )}
 
@@ -566,7 +724,7 @@ export default function VentasUI({ ventas, clientes, servicios, ivaAplica, nextN
                 {ventas.map((v) => (
                   <tr key={v.id} className={`hover:bg-gray-50/40 transition-colors ${v.estado === 'anulada' ? 'opacity-50' : ''}`}>
                     <td className="px-6 py-4 font-medium text-gray-900">#{v.numero_documento}</td>
-                    <td className="px-6 py-4 text-gray-700">{v.clientes?.nombre ?? 'Consumidor Final'}</td>
+                    <td className="px-6 py-4 text-gray-700">{v.clientes?.nombre ?? v.factura_nombre ?? 'Consumidor Final'}</td>
                     <td className="px-6 py-4 text-gray-500">{v.tipo_documento}</td>
                     <td className="px-6 py-4 text-gray-500">{v.tipo_pago}</td>
                     <td className="px-6 py-4 text-right font-bold text-gray-900">{fmt(v.total)}</td>
@@ -602,7 +760,7 @@ export default function VentasUI({ ventas, clientes, servicios, ivaAplica, nextN
                 className={`p-4 flex items-center justify-between gap-3 cursor-pointer hover:bg-gray-50 transition-colors ${v.estado === 'anulada' ? 'opacity-50' : ''}`}
               >
                 <div>
-                  <p className="font-medium text-gray-900">#{v.numero_documento} · {v.clientes?.nombre ?? 'Consumidor Final'}</p>
+                  <p className="font-medium text-gray-900">#{v.numero_documento} · {v.clientes?.nombre ?? v.factura_nombre ?? 'Consumidor Final'}</p>
                   <p className="text-xs text-gray-400 mt-0.5">{v.tipo_pago} · {v.tipo_documento}</p>
                 </div>
                 <div className="text-right">

@@ -21,7 +21,7 @@ export default async function VentasPage() {
       .order('numero_documento', { ascending: false }),
     supabaseAdmin
       .from('clientes')
-      .select('id, nombre, plazo_credito, activo')
+      .select('id, nombre, ruc_cedula, direccion, email, plazo_credito, activo')
       .eq('tenant_id', profile.tenant_id)
       .eq('activo', true)
       .order('nombre'),
