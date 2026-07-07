@@ -63,7 +63,7 @@ const STAT_CARDS = [
 const QUICK_LINKS = [
   {
     label: 'Nuevo servicio',
-    href: '/dashboard/servicios/nuevo',
+    href: '/dashboard/servicios',
     desc: 'Registrar un lavado',
     icon: (
       <svg className="w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,7 +74,7 @@ const QUICK_LINKS = [
   },
   {
     label: 'Nuevo cliente',
-    href: '/dashboard/clientes/nuevo',
+    href: '/dashboard/clientes',
     desc: 'Agregar cliente',
     icon: (
       <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">

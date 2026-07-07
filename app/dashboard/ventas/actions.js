@@ -7,6 +7,7 @@ import { getProfile } from '@/lib/getProfile'
 export async function crearVenta(data) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const {
     tipo_documento, cliente_id, fecha, items,
@@ -137,6 +138,7 @@ export async function crearVenta(data) {
 export async function anularVenta(id) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const { data: result, error: rpcErr } = await supabaseAdmin.rpc('anular_venta_contable', {
     p_venta_id: id,
@@ -156,6 +158,7 @@ export async function anularVenta(id) {
 export async function guardarClienteDesdeFactura({ nombre, ruc_cedula, direccion, email }) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura'].includes(profile.rol)) return { error: 'No autorizado' }
 
   if (!nombre) return { error: 'El nombre es requerido' }
   if (!ruc_cedula) return { error: 'La cédula/RUC es requerida' }

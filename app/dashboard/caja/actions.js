@@ -75,6 +75,7 @@ export async function getDatosCajaHoy() {
 export async function cerrarCaja(observaciones) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const hoy = new Date().toISOString().split('T')[0]
 

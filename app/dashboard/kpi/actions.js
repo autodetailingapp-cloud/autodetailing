@@ -24,18 +24,18 @@ export async function getDatosKpi(mes, ano) {
 
   const [ventasAct, ventasPrev, ventasAnoAnt, detallesAct, comprasAct, comprasPrev, carteraAct] = await Promise.all([
     supabaseAdmin.from('ventas').select('id,total,fecha,cliente_id').eq('tenant_id', profile.tenant_id)
-      .gte('fecha', desde).lte('fecha', hasta).eq('anulada', false),
+      .gte('fecha', desde).lte('fecha', hasta).eq('estado', 'activa'),
     supabaseAdmin.from('ventas').select('total').eq('tenant_id', profile.tenant_id)
-      .gte('fecha', desdePrev).lte('fecha', hastaPrev).eq('anulada', false),
+      .gte('fecha', desdePrev).lte('fecha', hastaPrev).eq('estado', 'activa'),
     supabaseAdmin.from('ventas').select('total').eq('tenant_id', profile.tenant_id)
-      .gte('fecha', desdeAnoAnt).lte('fecha', hastaAnoAnt).eq('anulada', false),
+      .gte('fecha', desdeAnoAnt).lte('fecha', hastaAnoAnt).eq('estado', 'activa'),
     // detalles se carga después de tener los venta_ids del período
     Promise.resolve({ data: [] }),
     supabaseAdmin.from('compras').select('total,tipo').eq('tenant_id', profile.tenant_id)
       .gte('fecha', desde).lte('fecha', hasta),
     supabaseAdmin.from('compras').select('total,tipo').eq('tenant_id', profile.tenant_id)
       .gte('fecha', desdePrev).lte('fecha', hastaPrev),
-    supabaseAdmin.from('cartera').select('fecha_vencimiento,fecha_creacion,estado,saldo_pendiente,monto_original')
+    supabaseAdmin.from('cartera').select('fecha_vencimiento,created_at,estado,saldo_pendiente,monto_original')
       .eq('tenant_id', profile.tenant_id),
   ])
 
@@ -84,7 +84,7 @@ export async function getDatosKpi(mes, ano) {
   if (carteraVigente.length > 0) {
     const hoy = new Date()
     const diasTotales = carteraVigente.reduce((s, c) => {
-      const creacion = new Date(c.fecha_creacion ?? c.fecha_vencimiento)
+      const creacion = new Date(c.created_at ?? c.fecha_vencimiento)
       return s + Math.max(0, Math.floor((hoy - creacion) / (1000 * 60 * 60 * 24)))
     }, 0)
     diasPromCobro = diasTotales / carteraVigente.length

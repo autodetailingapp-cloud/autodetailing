@@ -17,9 +17,9 @@ export async function getDatosPyg(mes, ano) {
 
   const [ventasAct, ventasPrev, comprasAct, comprasPrev, activos, costoInsumosAct, costoInsumosPrev] = await Promise.all([
     supabaseAdmin.from('ventas').select('total').eq('tenant_id', profile.tenant_id)
-      .gte('fecha', rangoActual.desde).lte('fecha', rangoActual.hasta).eq('anulada', false),
+      .gte('fecha', rangoActual.desde).lte('fecha', rangoActual.hasta).eq('estado', 'activa'),
     supabaseAdmin.from('ventas').select('total').eq('tenant_id', profile.tenant_id)
-      .gte('fecha', rangoAnterior.desde).lte('fecha', rangoAnterior.hasta).eq('anulada', false),
+      .gte('fecha', rangoAnterior.desde).lte('fecha', rangoAnterior.hasta).eq('estado', 'activa'),
     supabaseAdmin.from('compras').select('total,tipo,descripcion').eq('tenant_id', profile.tenant_id)
       .gte('fecha', rangoActual.desde).lte('fecha', rangoActual.hasta),
     supabaseAdmin.from('compras').select('total,tipo,descripcion').eq('tenant_id', profile.tenant_id)

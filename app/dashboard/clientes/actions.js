@@ -7,6 +7,7 @@ import { getProfile } from '@/lib/getProfile'
 export async function crearCliente(prevState, formData) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura', 'cajero'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const nombre = formData.get('nombre')?.toString().trim()
   const ruc_cedula = formData.get('ruc_cedula')?.toString().trim()
@@ -48,6 +49,7 @@ export async function crearCliente(prevState, formData) {
 export async function actualizarCliente(prevState, formData) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura', 'cajero'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const id = formData.get('id')?.toString()
   const nombre = formData.get('nombre')?.toString().trim()
@@ -82,6 +84,7 @@ export async function actualizarCliente(prevState, formData) {
 export async function toggleCliente(id, activo) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura', 'cajero'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const { error } = await supabaseAdmin
     .from('clientes')
@@ -98,6 +101,7 @@ export async function toggleCliente(id, activo) {
 export async function eliminarCliente(id) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura', 'cajero'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const { count } = await supabaseAdmin
     .from('ventas')

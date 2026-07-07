@@ -7,6 +7,7 @@ import { getProfile } from '@/lib/getProfile'
 export async function crearActivo(prevState, formData) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura', 'cajero'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const nombre = formData.get('nombre')?.toString().trim()
   const categoria = formData.get('categoria')?.toString()
@@ -39,6 +40,7 @@ export async function crearActivo(prevState, formData) {
 export async function actualizarActivo(prevState, formData) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura', 'cajero'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const id = formData.get('id')?.toString()
   const nombre = formData.get('nombre')?.toString().trim()
@@ -64,6 +66,7 @@ export async function actualizarActivo(prevState, formData) {
 export async function eliminarActivo(id) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura', 'cajero'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const { error } = await supabaseAdmin
     .from('activos_fijos')

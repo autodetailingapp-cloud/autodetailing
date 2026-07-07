@@ -7,6 +7,7 @@ import { getProfile } from '@/lib/getProfile'
 export async function crearColaborador(prevState, formData) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura', 'cajero'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const nombre = formData.get('nombre')?.toString().trim()
   const cargo = formData.get('cargo')?.toString().trim() || null
@@ -29,6 +30,7 @@ export async function crearColaborador(prevState, formData) {
 export async function actualizarColaborador(prevState, formData) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura', 'cajero'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const id = formData.get('id')?.toString()
   const nombre = formData.get('nombre')?.toString().trim()
@@ -52,6 +54,7 @@ export async function actualizarColaborador(prevState, formData) {
 export async function eliminarColaborador(id) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura', 'cajero'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const { error } = await supabaseAdmin
     .from('colaboradores')
@@ -68,14 +71,15 @@ export async function eliminarColaborador(id) {
 export async function registrarAsistencia(colaboradorId, fecha, estado) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura', 'cajero'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const { error } = await supabaseAdmin.rpc('upsert_asistencias', {
-    p_registros: JSON.stringify([{
+    p_registros: [{
       tenant_id: profile.tenant_id,
       colaborador_id: colaboradorId,
       fecha,
       estado,
-    }]),
+    }],
   })
 
   if (error) return { error: error.message }
@@ -86,6 +90,7 @@ export async function registrarAsistencia(colaboradorId, fecha, estado) {
 export async function registrarAsistenciaBulk(registros) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura', 'cajero'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const rows = registros.map((r) => ({
     tenant_id: profile.tenant_id,
@@ -95,7 +100,7 @@ export async function registrarAsistenciaBulk(registros) {
   }))
 
   const { error } = await supabaseAdmin.rpc('upsert_asistencias', {
-    p_registros: JSON.stringify(rows),
+    p_registros: rows,
   })
 
   if (error) return { error: error.message }
@@ -106,6 +111,7 @@ export async function registrarAsistenciaBulk(registros) {
 export async function pagarNomina(colaboradorId, monto, descripcion) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura', 'cajero'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const hoy = new Date().toISOString().split('T')[0]
 

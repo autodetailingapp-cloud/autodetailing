@@ -14,6 +14,7 @@ async function checkCajaCerrada(tenantId, fecha) {
 export async function crearCompra(prevState, formData) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const proveedor         = formData.get('proveedor')?.toString().trim()
   const tipo              = formData.get('tipo')?.toString()
@@ -82,6 +83,7 @@ export async function crearCompra(prevState, formData) {
 export async function actualizarCompra(prevState, formData) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const id              = formData.get('id')?.toString()
   const proveedor       = formData.get('proveedor')?.toString().trim()
@@ -141,6 +143,7 @@ export async function actualizarCompra(prevState, formData) {
 export async function eliminarCompra(id) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const { data: compra } = await supabaseAdmin
     .from('compras').select('fecha')

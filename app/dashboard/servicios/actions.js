@@ -7,6 +7,7 @@ import { getProfile } from '@/lib/getProfile'
 export async function crearServicio(prevState, formData) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura', 'cajero'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const nombre = formData.get('nombre')?.toString().trim()
   const descripcion = formData.get('descripcion')?.toString().trim() ?? ''
@@ -30,6 +31,7 @@ export async function crearServicio(prevState, formData) {
 export async function actualizarServicio(prevState, formData) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura', 'cajero'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const id = formData.get('id')?.toString()
   const nombre = formData.get('nombre')?.toString().trim()
@@ -56,6 +58,7 @@ export async function actualizarServicio(prevState, formData) {
 export async function toggleServicio(id, activo) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura', 'cajero'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const { error } = await supabaseAdmin
     .from('servicios')
@@ -72,6 +75,7 @@ export async function toggleServicio(id, activo) {
 export async function eliminarServicio(id) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura', 'cajero'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const { count } = await supabaseAdmin
     .from('detalle_ventas')

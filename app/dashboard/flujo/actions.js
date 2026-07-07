@@ -21,13 +21,13 @@ export async function getDatosFlujo(mes, ano) {
 
   const [ventasRes, pagosRes, comprasRes, ventasSigRes, comprasSigRes] = await Promise.all([
     supabaseAdmin.from('ventas').select('fecha,total,tipo_pago').eq('tenant_id', profile.tenant_id)
-      .gte('fecha', desde).lte('fecha', hasta).eq('anulada', false).order('fecha'),
+      .gte('fecha', desde).lte('fecha', hasta).eq('estado', 'activa').order('fecha'),
     supabaseAdmin.from('pagos_cartera').select('fecha,monto').eq('tenant_id', profile.tenant_id)
       .gte('fecha', desde).lte('fecha', hasta).order('fecha'),
     supabaseAdmin.from('compras').select('fecha,total').eq('tenant_id', profile.tenant_id)
       .gte('fecha', desde).lte('fecha', hasta).order('fecha'),
     supabaseAdmin.from('ventas').select('total,tipo_pago').eq('tenant_id', profile.tenant_id)
-      .gte('fecha', desdeSig).lte('fecha', hastaSig).eq('anulada', false),
+      .gte('fecha', desdeSig).lte('fecha', hastaSig).eq('estado', 'activa'),
     supabaseAdmin.from('compras').select('total').eq('tenant_id', profile.tenant_id)
       .gte('fecha', desdeSig).lte('fecha', hastaSig),
   ])

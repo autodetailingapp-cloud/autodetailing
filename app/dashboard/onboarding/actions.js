@@ -20,6 +20,15 @@ export async function actualizarNegocioOnboarding(formData) {
   const update = { direccion, telefono, regimen_sri, onboarding_paso: 1 }
 
   if (logo instanceof File && logo.size > 0) {
+    const { data: buckets } = await supabaseAdmin.storage.listBuckets()
+    const logosBucket = buckets?.find((b) => b.name === 'logos')
+    if (!logosBucket) {
+      await supabaseAdmin.storage.createBucket('logos', {
+        public: true,
+        fileSizeLimit: 2097152,
+      })
+    }
+
     const ext = logo.name.split('.').pop() || 'png'
     const path = `${profile.tenant_id}.${ext}`
     const { error: uploadErr } = await supabaseAdmin.storage

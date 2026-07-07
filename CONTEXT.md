@@ -128,37 +128,40 @@ El sistema es multi-tenant: cada lavadero tiene su propio espacio aislado de dat
 
 ## 8. Módulos Desarrollados
 
-### ✅ Completados
+### ✅ Completados y funcionales
 1. Autenticación: login, registro, protección de rutas
-2. Servicios y precios: CRUD con activar/desactivar
+2. Servicios y precios: CRUD completo
 3. Clientes: CRUD con crédito y datos de factura
-4. Ventas: registro diario, consumidor final, factura rápida, cliente registrado, descuentos, tipos de pago, anulación
+4. Ventas: registro diario, consumidor final, factura rápida, descuentos, tipos de pago, anulación
 5. Compras: costo/gasto, Factura/NV, crédito proveedor
 6. Caja diaria: cierre automático desde ventas y compras
 7. Cartera por cobrar: cobros parciales/totales con alertas
-8. Nómina: colaboradores, asistencia, cálculo mensual
+8. Nómina: colaboradores, asistencia (fix restricción UNIQUE), cálculo mensual
 9. Activos fijos: equipos con depreciación SRI automática
 10. Inventario: insumos, stock, alertas reabastecimiento
 11. Costos por servicio: receta de insumos + margen real
-12. P&G Estado de Resultados: automático por período
-13. Balance Situación Financiera: activos/pasivos/patrimonio
-14. Flujo de Caja: entradas/salidas con proyección
-15. KPI Financieros: margen, ticket, comparativos
-16. Tributario SRI: adaptado por régimen automáticamente
-17. Onboarding Wizard: 6 pasos para nuevos tenants
-18. Usuarios y roles: invitar, asignar roles, activar/desactivar
-19. Dashboard principal: stats y acceso rápido
+12. P&G Estado de Resultados: fix columna estado vs anulada
+13. Balance Situación Financiera: fix columna estado
+14. Flujo de Caja: fix columna estado
+15. KPI Financieros: fix columna estado y fecha_creacion
+16. Tributario SRI: fix tipo_documento y columna estado
+17. Onboarding Wizard: 6 pasos, bucket logos auto-creado
+18. Usuarios y roles: invitar, asignar, activar/desactivar
+19. Dashboard principal: accesos rápidos corregidos
+20. Configuración: página placeholder
+21. Reportes: página hub con links a módulos financieros
+22. Autorización por rol: 23 funciones protegidas en 8 módulos
 
 ### ⏳ Pendientes
-1. Dashboard ejecutivo con gráficas (Fase 7)
+1. Dashboard ejecutivo con gráficas (recharts)
 2. Exportar reportes a PDF
 3. Exportar reportes a Excel
-4. Integración Stripe (suscripciones y cobro automático)
+4. Integración Stripe (suscripciones)
 5. Landing page pública con precios
-6. Panel Super Admin (ver todos los tenants)
-7. Feature flags por plan (bloquear módulos según plan)
+6. Panel Super Admin
+7. Feature flags por plan
 8. Dominio personalizado
-9. Cliente piloto real y lanzamiento
+9. Cliente piloto y lanzamiento
 
 ## 9. Integridad Contable
 Principio fundamental: todos los módulos están atados.
@@ -176,6 +179,7 @@ Principio fundamental: todos los módulos están atados.
 - migrations_v3.sql: insumos, servicio_insumos, movimientos_inventario, RPCs de inventario
 - migrations_v4.sql: columnas factura_* en ventas
 - migrations_v5.sql: onboarding_completado, onboarding_paso, bucket de storage "logos"
+- migrations_v6.sql: restricción UNIQUE(colaborador_id, fecha) en asistencia para que el RPC upsert_asistencias funcione
 
 ## 11. Convenciones de Código
 - Cada módulo tiene 3 archivos:
@@ -197,17 +201,20 @@ Principio fundamental: todos los módulos están atados.
 - Sistema de autenticación completo
 - Deploy en Vercel funcionando
 
-### Sesión 2 — [fecha]
-- Módulos: Servicios, Clientes, Ventas, Compras, Caja
+### Sesión 2 — julio 2026
+- Módulos operativos: Servicios, Clientes, Ventas, Compras, Caja, Cartera, Nómina, Activos Fijos
 - Integridad contable con RPCs PostgreSQL
-- Módulos: Cartera, Nómina, Activos Fijos
 - Módulos financieros: P&G, Balance, Flujo, KPI, Tributario
 - Módulo de Inventario y costos por servicio
-- Fix conflicto Compras ↔ Inventario en P&G
+- Fix conflicto Compras vs Inventario en P&G
 - Factura rápida para consumidor final en ventas
-- Wizard de onboarding (6 pasos)
+- Wizard de onboarding 6 pasos
 - Módulo de usuarios y roles
-- Usuario del socio creado: imagine.ec593@gmail.com
+- Usuario socio creado: imagine.ec593@gmail.com
+- Reset de datos de prueba
+- CONTEXT.md creado
+- Auditoría completa del proyecto
+- Fix bugs críticos: columna estado en módulos financieros, asistencia UNIQUE, enlaces rotos, autorización por rol
 
 ## 13. Notas Importantes
 - El proyecto Supabase se pausa por inactividad en plan Free. Reactivar desde supabase.com si da error de conexión
@@ -218,9 +225,9 @@ Principio fundamental: todos los módulos están atados.
 - Las variables de entorno están configuradas en Vercel
 
 ## 14. Próxima Sesión — Por hacer
-1. Probar wizard de onboarding con usuario del socio
-2. Verificar módulo de usuarios (invitar, roles)
-3. Resetear datos de prueba con reset_data.sql
-4. Construir dashboard ejecutivo con gráficas
-5. Implementar exportación PDF y Excel
-6. Planificar integración Stripe
+1. Dashboard ejecutivo con gráficas (recharts/chart.js)
+2. Exportar P&G y reportes a PDF
+3. Exportar ventas y compras a Excel
+4. Integración Stripe para cobro de suscripciones
+5. Landing page pública
+6. Panel Super Admin

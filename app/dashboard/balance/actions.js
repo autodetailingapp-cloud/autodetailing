@@ -9,7 +9,7 @@ export async function getDatosBalance(fechaCorte) {
 
   const [ventasRes, pagosCartRes, comprasRes, carteraRes, cartProvRes, activosRes] = await Promise.all([
     supabaseAdmin.from('ventas').select('total,tipo_pago').eq('tenant_id', profile.tenant_id)
-      .lte('fecha', fechaCorte).eq('anulada', false),
+      .lte('fecha', fechaCorte).eq('estado', 'activa'),
     supabaseAdmin.from('pagos_cartera').select('monto').eq('tenant_id', profile.tenant_id)
       .lte('fecha', fechaCorte),
     supabaseAdmin.from('compras').select('total').eq('tenant_id', profile.tenant_id)

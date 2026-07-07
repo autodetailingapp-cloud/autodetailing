@@ -7,6 +7,7 @@ import { getProfile } from '@/lib/getProfile'
 export async function pagarCartera(carteraId, monto, tipoPago) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
+  if (['lectura'].includes(profile.rol)) return { error: 'No autorizado' }
 
   const { data: result, error } = await supabaseAdmin.rpc('registrar_pago_cartera', {
     p_cartera_id: carteraId,

@@ -28,10 +28,10 @@ export async function getDatosTributario(ano) {
 
   // Ingresos del año corriente
   const [ventasAnoRes, comprasAnoRes] = await Promise.all([
-    supabaseAdmin.from('ventas').select('total,fecha,tipo_doc_venta')
+    supabaseAdmin.from('ventas').select('total,fecha,tipo_documento')
       .eq('tenant_id', profile.tenant_id)
       .gte('fecha', `${ano}-01-01`).lte('fecha', `${ano}-12-31`)
-      .eq('anulada', false),
+      .eq('estado', 'activa'),
     supabaseAdmin.from('compras').select('total,tipo_doc_compra,iva,fecha')
       .eq('tenant_id', profile.tenant_id)
       .gte('fecha', `${ano}-01-01`).lte('fecha', `${ano}-12-31`),
