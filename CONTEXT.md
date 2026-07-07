@@ -1,0 +1,226 @@
+# AutoDetailing Manager — Contexto del Proyecto
+
+## 1. Objetivo del Proyecto
+AutoDetailing Manager es un SaaS (Software como Servicio) de administración para lavaderos de autos y detailing, diseñado para el mercado ecuatoriano. Se vende como suscripción mensual a lavaderos que necesitan administrar sus operaciones, finanzas y cumplimiento tributario con el SRI de Ecuador.
+
+El sistema es multi-tenant: cada lavadero tiene su propio espacio aislado de datos mediante Row Level Security (RLS) de Supabase.
+
+## 2. Modelo de Negocio
+- SaaS con 3 planes de suscripción mensual:
+  * Plan Emprendedor: $18/mes (RIMPE Popular)
+  * Plan Pro: $45/mes (RIMPE Emprendedor)
+  * Plan Premium: $85/mes (RUC General)
+- Cobro automático via Stripe (pendiente de implementar)
+- Mercado objetivo: lavaderos de autos y detailing en Ecuador
+- Diferenciador: adaptado 100% a normativa SRI Ecuador
+
+## 3. Stack Tecnológico
+- Frontend: Next.js 16 con App Router, Tailwind CSS
+- Backend: Supabase (PostgreSQL + Auth + Storage)
+- Hosting: Vercel (deploy automático desde GitHub)
+- Control de versiones: GitHub
+- IDE: VS Code con Claude Code (agente de IA)
+- Pagos: Stripe (pendiente)
+
+## 4. Credenciales y Accesos
+
+> ⚠️ **Las credenciales reales (contraseñas, tokens) NO se guardan en este
+> archivo** porque CONTEXT.md se sube a GitHub junto con el código. Guárdalas
+> en un gestor de contraseñas (1Password, Bitwarden) o en un archivo local
+> fuera del repo. Aquí solo quedan las referencias de dónde vive cada cosa.
+
+### App en producción
+- URL: https://autodetailing-inky.vercel.app
+- Usuario test: test3@lavadero.com (contraseña en gestor de contraseñas)
+- Usuario socio: imagine.ec593@gmail.com (contraseña en gestor de contraseñas)
+
+### Supabase
+- Proyecto: autodetailing
+- URL: https://amcfeehvsodfumyfzaoj.supabase.co
+- Panel: https://supabase.com
+- Claves (anon key, service role key): en `.env.local` (no está en git) y en las variables de entorno de Vercel
+
+### GitHub
+- Repositorio: https://github.com/autodetailingapp-cloud/autodetailing
+- Usuario: autodetailingapp-cloud
+- Token de acceso (push por HTTPS): guardado en gestor de contraseñas, NO en este archivo ni en el código. Si el remoto de git deja de autenticar, regenerar un token nuevo desde GitHub → Settings → Developer settings → Personal access tokens.
+
+### Vercel
+- Panel: https://vercel.com/autdetail-s-projects/autodetailing
+- Deploy: automático al hacer push a main
+- Tiene códigos de respaldo de 2FA (guardados en gestor de contraseñas)
+
+### Gmail del proyecto
+- Email: autodetailing.app@gmail.com
+
+## 5. Metodología de Trabajo
+- Juan Carlos (JC) no tiene conocimientos de programación
+- Toda la comunicación es en español
+- Claude (este chat) actúa como arquitecto y coordinador
+- Claude Code en VS Code ejecuta el código directamente
+- Flujo de trabajo:
+  1. JC describe lo que necesita en este chat
+  2. Claude prepara la orden completa y optimizada
+  3. JC pega la orden en Claude Code (VS Code)
+  4. Claude Code construye el código
+  5. JC ejecuta SQL en Supabase SQL Editor si es necesario
+  6. JC hace git push desde terminal 2 de VS Code
+  7. Vercel despliega automáticamente
+- Principio: órdenes completas y frontloaded para ahorrar tokens
+- Claude Code tiene permisos para hacer todos los cambios sin pedir confirmación (shift+tab al inicio de sesión)
+- Se usan 2 terminales en VS Code:
+  * Terminal 1: Claude Code (agente)
+  * Terminal 2: git push
+
+## 6. Arquitectura del Sistema
+
+### Multi-tenant
+- Cada lavadero = 1 tenant con tenant_id único
+- RLS activado en todas las tablas
+- Usuarios dentro de cada tenant con roles
+
+### Roles de usuario
+- Admin: acceso total, único por tenant
+- Supervisor: operativo sin finanzas
+- Cajero: solo registrar ventas
+- Lectura: solo ver reportes (contador/socio)
+
+### Normativa SRI Ecuador
+- RIMPE Popular: hasta $20.000/año, solo Notas de Venta
+- RIMPE Emprendedor: $20.001-$300.000, Facturas, 1.5% semestral
+- RUC General: más de $300.000, Facturas + IVA 15% + retenciones
+
+## 7. Base de Datos — Tablas
+
+### Tablas principales
+- tenants: datos del lavadero, régimen SRI, plan, onboarding
+- profiles: usuarios con roles por tenant
+- clientes: base de clientes con crédito 30/60/90 días
+- servicios: catálogo de servicios y precios
+- ventas: registro de ventas con datos de factura
+- detalle_ventas: líneas de cada venta
+- compras: insumos y gastos operativos
+- colaboradores: personal del lavadero
+- asistencia: registro diario de asistencia
+- activos_fijos: equipos con depreciación SRI
+- caja_diaria: cierre y cuadre diario
+- suscripciones: planes y pagos Stripe
+
+### Tablas de inventario
+- insumos: materias primas y productos
+- servicio_insumos: receta de insumos por servicio
+- movimientos_inventario: entradas y consumos
+
+### Tablas de cartera
+- cartera: cuentas por cobrar (ventas a crédito)
+- pagos_cartera: registro de cobros
+- cartera_proveedores: cuentas por pagar
+
+### Funciones PostgreSQL (RPCs)
+- recalcular_caja_diaria: recalcula totales del día
+- anular_venta_contable: anula + revierte inventario + recaja
+- registrar_pago_cartera: cobra cartera + recaja
+- descontar_inventario_venta: descuenta stock al vender
+- revertir_inventario_venta: repone stock al anular
+- calcular_costo_venta: costo de insumos de una venta
+- costo_insumos_periodo: costo total de insumos en período
+- upsert_asistencias: registra asistencia sin error de schema
+
+## 8. Módulos Desarrollados
+
+### ✅ Completados
+1. Autenticación: login, registro, protección de rutas
+2. Servicios y precios: CRUD con activar/desactivar
+3. Clientes: CRUD con crédito y datos de factura
+4. Ventas: registro diario, consumidor final, factura rápida, cliente registrado, descuentos, tipos de pago, anulación
+5. Compras: costo/gasto, Factura/NV, crédito proveedor
+6. Caja diaria: cierre automático desde ventas y compras
+7. Cartera por cobrar: cobros parciales/totales con alertas
+8. Nómina: colaboradores, asistencia, cálculo mensual
+9. Activos fijos: equipos con depreciación SRI automática
+10. Inventario: insumos, stock, alertas reabastecimiento
+11. Costos por servicio: receta de insumos + margen real
+12. P&G Estado de Resultados: automático por período
+13. Balance Situación Financiera: activos/pasivos/patrimonio
+14. Flujo de Caja: entradas/salidas con proyección
+15. KPI Financieros: margen, ticket, comparativos
+16. Tributario SRI: adaptado por régimen automáticamente
+17. Onboarding Wizard: 6 pasos para nuevos tenants
+18. Usuarios y roles: invitar, asignar roles, activar/desactivar
+19. Dashboard principal: stats y acceso rápido
+
+### ⏳ Pendientes
+1. Dashboard ejecutivo con gráficas (Fase 7)
+2. Exportar reportes a PDF
+3. Exportar reportes a Excel
+4. Integración Stripe (suscripciones y cobro automático)
+5. Landing page pública con precios
+6. Panel Super Admin (ver todos los tenants)
+7. Feature flags por plan (bloquear módulos según plan)
+8. Dominio personalizado
+9. Cliente piloto real y lanzamiento
+
+## 9. Integridad Contable
+Principio fundamental: todos los módulos están atados.
+- Registrar venta → actualiza caja_diaria + descuenta inventario
+- Anular venta → revierte caja + repone inventario + borra cartera
+- Registrar compra → actualiza caja_diaria
+- Cobrar cartera → actualiza caja_diaria
+- Pagar nómina → crea gasto en compras + actualiza caja
+- P&G se calcula automáticamente, nunca se ingresa manualmente
+- Costo de ventas = compras directas + insumos consumidos (sin duplicar)
+
+## 10. Migraciones SQL Ejecutadas
+- migrations.sql: tablas base + RLS + políticas
+- migrations_v2.sql: tipo_doc_compra, plazo_pago_proveedor, tenant_id en asistencia, RPC upsert_asistencias
+- migrations_v3.sql: insumos, servicio_insumos, movimientos_inventario, RPCs de inventario
+- migrations_v4.sql: columnas factura_* en ventas
+- migrations_v5.sql: onboarding_completado, onboarding_paso, bucket de storage "logos"
+
+## 11. Convenciones de Código
+- Cada módulo tiene 3 archivos:
+  * page.js: Server Component, fetch de datos, layout
+  * UI.js (o ComponenteUI.js): Client Component con la UI
+  * actions.js: Server Actions con lógica de negocio
+- Siempre usar supabaseAdmin (service role) para operaciones
+- getProfile() en lib/getProfile.js para autenticación
+- Colores: #1D9E75 (verde brand), #534AB7 (morado accent)
+- Tailwind CSS para todos los estilos
+- No se usa TypeScript (JavaScript puro)
+
+## 12. Sesiones de Trabajo
+### Sesión 1 — [fecha]
+- Configuración inicial del proyecto
+- Creación de cuentas Supabase, GitHub, Vercel
+- Proyecto Next.js + conexión Supabase
+- Tablas base de datos (12 tablas)
+- Sistema de autenticación completo
+- Deploy en Vercel funcionando
+
+### Sesión 2 — [fecha]
+- Módulos: Servicios, Clientes, Ventas, Compras, Caja
+- Integridad contable con RPCs PostgreSQL
+- Módulos: Cartera, Nómina, Activos Fijos
+- Módulos financieros: P&G, Balance, Flujo, KPI, Tributario
+- Módulo de Inventario y costos por servicio
+- Fix conflicto Compras ↔ Inventario en P&G
+- Factura rápida para consumidor final en ventas
+- Wizard de onboarding (6 pasos)
+- Módulo de usuarios y roles
+- Usuario del socio creado: imagine.ec593@gmail.com
+
+## 13. Notas Importantes
+- El proyecto Supabase se pausa por inactividad en plan Free. Reactivar desde supabase.com si da error de conexión
+- El token de GitHub para push está guardado en el gestor de contraseñas, no en este archivo ni en el código (ver sección 4). Si el remoto pide autenticación, regenerarlo desde GitHub
+- Claude Code necesita shift+tab al inicio de cada sesión para aprobar todos los cambios sin confirmación
+- Vercel tiene códigos de respaldo de autenticación 2FA (ver gestor de contraseñas)
+- El .env.local NO se sube a GitHub (está en .gitignore)
+- Las variables de entorno están configuradas en Vercel
+
+## 14. Próxima Sesión — Por hacer
+1. Probar wizard de onboarding con usuario del socio
+2. Verificar módulo de usuarios (invitar, roles)
+3. Resetear datos de prueba con reset_data.sql
+4. Construir dashboard ejecutivo con gráficas
+5. Implementar exportación PDF y Excel
+6. Planificar integración Stripe
