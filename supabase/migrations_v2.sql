@@ -43,8 +43,7 @@ BEGIN
       reg->>'estado'
     )
     ON CONFLICT (colaborador_id, fecha) DO UPDATE SET
-      estado    = EXCLUDED.estado,
-      tenant_id = EXCLUDED.tenant_id;
+      estado = EXCLUDED.estado;
   END LOOP;
 END;
 $$;
