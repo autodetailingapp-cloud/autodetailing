@@ -1,26 +1,7 @@
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { getProfile } from '@/lib/getProfile'
 import Sidebar from './Sidebar'
-
-async function getProfile() {
-  const cookieStore = await cookies()
-  const accessToken = cookieStore.get('sb-access-token')?.value
-
-  if (!accessToken) return null
-
-  // Valida el JWT y obtiene el usuario sin depender de setSession ni RLS
-  const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(accessToken)
-  if (userError || !user) return null
-
-  const { data: profile } = await supabaseAdmin
-    .from('profiles')
-    .select('*, tenants(*)')
-    .eq('id', user.id)
-    .single()
-
-  return profile
-}
+import OnboardingWizard from './onboarding/OnboardingWizard'
 
 const PLAN_CONFIG = {
   emprendedor: { label: 'Emprendedor', className: 'bg-brand-light text-brand' },
@@ -131,6 +112,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
+      {tenant && !tenant.onboarding_completado && <OnboardingWizard tenant={tenant} />}
       <Sidebar profile={profile} />
 
       <main className="flex-1 overflow-y-auto">

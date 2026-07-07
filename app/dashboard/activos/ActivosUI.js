@@ -8,7 +8,7 @@ const fmt = (n) => `$${Number(n ?? 0).toFixed(2)}`
 const fmtFecha = (s) =>
   s ? new Date(s + 'T00:00:00').toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
-const CATEGORIAS_SRI = [
+export const CATEGORIAS_SRI = [
   { value: 'Inmuebles',           anos: 20 },
   { value: 'Maquinaria y equipo', anos: 10 },
   { value: 'Vehículos',           anos: 5 },

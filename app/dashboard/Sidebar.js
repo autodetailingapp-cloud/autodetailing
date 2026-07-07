@@ -186,6 +186,17 @@ const NAV_ITEMS = {
       ),
     },
     {
+      key: 'usuarios',
+      label: 'Usuarios',
+      href: '/dashboard/usuarios',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      ),
+    },
+    {
       key: 'configuracion',
       label: 'Configuración',
       href: '/dashboard/configuracion',
@@ -226,9 +237,12 @@ export default function Sidebar({ profile }) {
 
   const rol = profile?.rol ?? 'lectura'
   const items = getItems(rol)
-  const tenantNombre = profile?.tenants?.nombre ?? 'AutoDetailing'
+  const tenant = profile?.tenants
+  const tenantNombre = tenant?.nombre ?? 'AutoDetailing'
   const userName = profile?.nombre ?? 'Usuario'
   const initial = userName[0]?.toUpperCase() ?? 'U'
+  const onboardingPaso = Math.min(Math.max(tenant?.onboarding_paso ?? 0, 0), 6)
+  const onboardingPendiente = !!tenant && !tenant.onboarding_completado
 
   function isActive(href) {
     if (href === '/dashboard') return pathname === '/dashboard'
@@ -250,6 +264,23 @@ export default function Sidebar({ profile }) {
           <p className="text-xs text-gray-400 truncate leading-tight">{tenantNombre}</p>
         </div>
       </div>
+
+      {/* Progreso de onboarding */}
+      {onboardingPendiente && (
+        <Link
+          href="/dashboard"
+          onClick={() => setOpen(false)}
+          className="mx-3 mt-3 block px-3.5 py-3 rounded-xl bg-brand-light hover:bg-brand-light/70 transition-colors"
+        >
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-xs font-semibold text-brand">Configuración inicial</p>
+            <p className="text-xs font-semibold text-brand">{onboardingPaso}/6</p>
+          </div>
+          <div className="w-full h-1.5 bg-white/70 rounded-full overflow-hidden">
+            <div className="h-full bg-brand transition-all duration-300" style={{ width: `${(onboardingPaso / 6) * 100}%` }} />
+          </div>
+        </Link>
+      )}
 
       {/* Navegación */}
       <div className="flex-1 px-3 py-4 overflow-y-auto space-y-0.5">
