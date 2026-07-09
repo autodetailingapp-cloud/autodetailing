@@ -53,6 +53,9 @@ El sistema es multi-tenant: cada lavadero tiene su propio espacio aislado de dat
 ### Gmail del proyecto
 - Email: autodetailing.app@gmail.com
 
+## ⚠️ Nota de seguridad — julio 2026
+Durante el debugging de esta sesión, la service_role key de Supabase quedó expuesta en texto plano varias veces (en comandos curl usados para verificar el schema real contra producción). Se recomienda regenerarla: Supabase → Project Settings → API → Reset service_role key, y actualizar el valor en .env.local y en las variables de entorno de Vercel antes de la próxima sesión.
+
 ## 5. Metodología de Trabajo
 - Juan Carlos (JC) no tiene conocimientos de programación
 - Toda la comunicación es en español
@@ -215,6 +218,14 @@ Principio fundamental: todos los módulos están atados.
 - CONTEXT.md creado
 - Auditoría completa del proyecto
 - Fix bugs críticos: columna estado en módulos financieros, asistencia UNIQUE, enlaces rotos, autorización por rol
+
+### Sesión 3 — julio 2026 (post-CONTEXT.md v1)
+- Reportadas 8 novedades por el socio (bugs + mejoras UX) vía documento con capturas
+- FIX crítico: activos_fijos — la tabla real en Supabase tiene columna fecha_adquisicion, no fecha_compra como asumía migrations.sql (la tabla diverge del archivo de migraciones, probablemente editada manualmente en algún momento desde el dashboard de Supabase). Corregido en: activos/actions.js, ActivosUI.js, onboarding/actions.js, balance/actions.js, pyg/actions.js. Sin cambios de schema SQL necesarios. Commit 6c35bf2.
+- FIX crítico: "Nueva compra" no actualizaba Inventario al comprar insumos — el formulario se deshabilitaba y redirigía a "Ir a Inventario" en vez de completar la operación. Corregido: al elegir Clasificación "Costo" + insumo, ahora reutiliza el RPC registrar_entrada_insumo (mismo que "Registrar entrada de stock"), sin duplicar lógica. Sin cambios de schema SQL necesarios. Commit 1cdd755.
+- Ambos fixes probados contra producción real (con reversión de datos de prueba) y desplegados a Vercel.
+- PENDIENTE — Orden 3 (5 mejoras UX, aún no ejecutada): 1) Agrandar modal "Nueva venta", 2) Buscador de cliente en Ventas, 3) Reordenar campos en "Nueva compra": Producto antes que Descripción, 4) Agregar opción "Otros" en Doc. proveedor, 5) Columna "Concepto" en tabla de Movimientos diarios del Flujo de Caja
+- PENDIENTE — Orden 4: Dashboard ejecutivo con recharts (Fase 7)
 
 ## 13. Notas Importantes
 - El proyecto Supabase se pausa por inactividad en plan Free. Reactivar desde supabase.com si da error de conexión
