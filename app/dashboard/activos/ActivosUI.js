@@ -19,7 +19,7 @@ export const CATEGORIAS_SRI = [
 
 function calcDepreciacion(activo) {
   const hoy = new Date()
-  const compra = new Date(activo.fecha_compra + 'T00:00:00')
+  const compra = new Date(activo.fecha_adquisicion + 'T00:00:00')
   const mesesTranscurridos = (hoy.getFullYear() - compra.getFullYear()) * 12 + (hoy.getMonth() - compra.getMonth())
   const vidaUtilMeses = activo.vida_util_anos * 12
   const deprecMensual = Number(activo.valor_adquisicion) / vidaUtilMeses
@@ -103,7 +103,7 @@ function ModalActivo({ activo, onClose }) {
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Fecha de compra *</label>
             <input
               name="fecha_compra" type="date" required
-              defaultValue={activo?.fecha_compra ?? new Date().toISOString().split('T')[0]}
+              defaultValue={activo?.fecha_adquisicion ?? new Date().toISOString().split('T')[0]}
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
             />
           </div>
@@ -218,7 +218,7 @@ export default function ActivosUI({ activos }) {
                         <p className="text-xs text-gray-400">{pctDepreciado}% depreciado</p>
                       </td>
                       <td className="px-6 py-4 text-right font-bold text-gray-900">{fmt(a.valorActual)}</td>
-                      <td className="px-6 py-4 text-gray-500">{fmtFecha(a.fecha_compra)}</td>
+                      <td className="px-6 py-4 text-gray-500">{fmtFecha(a.fecha_adquisicion)}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <button
@@ -253,7 +253,7 @@ export default function ActivosUI({ activos }) {
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <p className="font-semibold text-gray-900">{a.nombre}</p>
-                    <p className="text-xs text-gray-400">{a.categoria} · {a.vida_util_anos} años · desde {fmtFecha(a.fecha_compra)}</p>
+                    <p className="text-xs text-gray-400">{a.categoria} · {a.vida_util_anos} años · desde {fmtFecha(a.fecha_adquisicion)}</p>
                   </div>
                   <div className="flex gap-1.5">
                     <button onClick={() => setModal(a)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100">

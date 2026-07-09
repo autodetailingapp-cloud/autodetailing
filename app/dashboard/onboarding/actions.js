@@ -111,7 +111,7 @@ export async function listarActivosOnboarding() {
   if (!profile) return []
   const { data } = await supabaseAdmin
     .from('activos_fijos')
-    .select('id, nombre, categoria, valor_adquisicion, fecha_compra')
+    .select('id, nombre, categoria, valor_adquisicion, fecha_adquisicion')
     .eq('tenant_id', profile.tenant_id)
     .eq('activo', true)
     .order('created_at')

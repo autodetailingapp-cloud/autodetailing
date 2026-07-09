@@ -24,7 +24,7 @@ export async function getDatosPyg(mes, ano) {
       .gte('fecha', rangoActual.desde).lte('fecha', rangoActual.hasta),
     supabaseAdmin.from('compras').select('total,tipo,descripcion').eq('tenant_id', profile.tenant_id)
       .gte('fecha', rangoAnterior.desde).lte('fecha', rangoAnterior.hasta),
-    supabaseAdmin.from('activos_fijos').select('valor_adquisicion,vida_util_anos,fecha_compra')
+    supabaseAdmin.from('activos_fijos').select('valor_adquisicion,vida_util_anos,fecha_adquisicion')
       .eq('tenant_id', profile.tenant_id).eq('activo', true),
     supabaseAdmin.rpc('costo_insumos_periodo', {
       p_tenant_id: profile.tenant_id, p_desde: rangoActual.desde, p_hasta: rangoActual.hasta,
@@ -58,7 +58,7 @@ export async function getDatosPyg(mes, ano) {
       const mesesVida = Number(a.vida_util_anos) * 12
       if (mesesVida <= 0) return acc
       const hoy = new Date()
-      const compra = new Date(a.fecha_compra + 'T00:00:00')
+      const compra = new Date(a.fecha_adquisicion + 'T00:00:00')
       const mesesUsados = Math.max(0,
         (hoy.getFullYear() - compra.getFullYear()) * 12 + (hoy.getMonth() - compra.getMonth())
       )

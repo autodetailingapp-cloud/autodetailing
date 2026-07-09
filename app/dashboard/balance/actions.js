@@ -16,7 +16,7 @@ export async function getDatosBalance(fechaCorte) {
       .lte('fecha', fechaCorte),
     supabaseAdmin.from('cartera').select('saldo_pendiente,estado').eq('tenant_id', profile.tenant_id),
     supabaseAdmin.from('cartera_proveedores').select('saldo_pendiente,estado').eq('tenant_id', profile.tenant_id),
-    supabaseAdmin.from('activos_fijos').select('valor_adquisicion,vida_util_anos,fecha_compra')
+    supabaseAdmin.from('activos_fijos').select('valor_adquisicion,vida_util_anos,fecha_adquisicion')
       .eq('tenant_id', profile.tenant_id).eq('activo', true),
   ])
 
@@ -40,7 +40,7 @@ export async function getDatosBalance(fechaCorte) {
   const activosFijosNeto = (activosRes.data ?? []).reduce((acc, a) => {
     const mesesVida = Number(a.vida_util_anos) * 12
     if (mesesVida <= 0) return acc + Number(a.valor_adquisicion)
-    const compra = new Date(a.fecha_compra + 'T00:00:00')
+    const compra = new Date(a.fecha_adquisicion + 'T00:00:00')
     const meses = Math.max(0, (hoy.getFullYear() - compra.getFullYear()) * 12 + (hoy.getMonth() - compra.getMonth()))
     const deprecAcum = Math.min(Number(a.valor_adquisicion), (Number(a.valor_adquisicion) / mesesVida) * meses)
     return acc + Math.max(0, Number(a.valor_adquisicion) - deprecAcum)
