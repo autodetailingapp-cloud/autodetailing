@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useActionState, useTransition } from 'react'
-import Link from 'next/link'
 import { crearCompra, actualizarCompra, eliminarCompra } from './actions'
+import { registrarEntrada } from '../inventario/actions'
 
 const fmt = (n) => `$${Number(n ?? 0).toFixed(2)}`
 const fmtFecha = (s) =>
@@ -41,16 +41,27 @@ function ModalConfirmar({ nombre, onConfirm, onCancel, pending }) {
 }
 
 // ——— Campos compartidos del formulario ———
-function CamposCompra({ state, formAction, pending, compra, isEdit, onClose, hoy, insumos }) {
+function CamposCompra({
+  state, formAction, pending, compra, isEdit, onClose, hoy, insumos,
+  tipo, setTipo, insumoId, setInsumoId,
+}) {
   const [tipoDocCompra, setTipoDocCompra] = useState(compra?.tipo_doc_compra ?? 'Factura')
   const [subtotal, setSubtotal] = useState(String(compra?.subtotal ?? ''))
   const [ivaVal, setIvaVal] = useState(String(compra?.iva ?? '0'))
   const [plazo, setPlazo] = useState(String(compra?.plazo_pago_proveedor ?? '0'))
-  const [tipo, setTipo] = useState(compra?.tipo ?? '')
-  const [insumoId, setInsumoId] = useState('')
+  const [cantidad, setCantidad] = useState('')
+  const [costoUnitario, setCostoUnitario] = useState('')
+  const [proveedorEntrada, setProveedorEntrada] = useState('')
 
   const esCostoNueva = tipo === 'Costo' && !isEdit
   const insumoSeleccionado = insumos?.find((i) => i.id === insumoId)
+
+  useEffect(() => {
+    if (insumoSeleccionado) {
+      setCostoUnitario(String(insumoSeleccionado.costo_unitario ?? ''))
+      setProveedorEntrada(insumoSeleccionado.proveedor ?? '')
+    }
+  }, [insumoId]) // eslint-disable-line
 
   // Auto-calcular IVA cuando cambia el subtotal o tipo de documento
   useEffect(() => {
@@ -69,7 +80,8 @@ function CamposCompra({ state, formAction, pending, compra, isEdit, onClose, hoy
   return (
     <form action={formAction} className="space-y-4">
       {isEdit && <input type="hidden" name="id" value={compra.id} />}
-      <input type="hidden" name="total" value={total} />
+      {!insumoSeleccionado && <input type="hidden" name="total" value={total} />}
+      {insumoSeleccionado && <input type="hidden" name="insumo_id" value={insumoSeleccionado.id} />}
 
       <div className="flex items-center justify-between mb-1">
         <h2 className="text-lg font-bold text-gray-900">{isEdit ? 'Editar compra' : 'Nueva compra'}</h2>
@@ -86,17 +98,19 @@ function CamposCompra({ state, formAction, pending, compra, isEdit, onClose, hoy
 
       {/* Tipo documento + Tipo (Costo/Gasto) */}
       <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Doc. proveedor <span className="text-red-500">*</span></label>
-          <select
-            name="tipo_doc_compra" required value={tipoDocCompra}
-            onChange={(e) => setTipoDocCompra(e.target.value)}
-            className={SELECT}
-          >
-            {TIPOS_DOC.map((t) => <option key={t}>{t}</option>)}
-          </select>
-        </div>
-        <div>
+        {!insumoSeleccionado && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Doc. proveedor <span className="text-red-500">*</span></label>
+            <select
+              name="tipo_doc_compra" required value={tipoDocCompra}
+              onChange={(e) => setTipoDocCompra(e.target.value)}
+              className={SELECT}
+            >
+              {TIPOS_DOC.map((t) => <option key={t}>{t}</option>)}
+            </select>
+          </div>
+        )}
+        <div className={insumoSeleccionado ? 'col-span-2' : ''}>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Clasificación <span className="text-red-500">*</span></label>
           <select name="tipo" required value={tipo} onChange={(e) => { setTipo(e.target.value); setInsumoId('') }} className={SELECT}>
             <option value="" disabled>Selecciona</option>
@@ -105,7 +119,7 @@ function CamposCompra({ state, formAction, pending, compra, isEdit, onClose, hoy
         </div>
       </div>
 
-      {tipo === 'Costo' && (
+      {tipo === 'Costo' && !esCostoNueva && (
         <div className="flex items-start gap-2 px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700">
           <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -124,6 +138,50 @@ function CamposCompra({ state, formAction, pending, compra, isEdit, onClose, hoy
             ))}
           </select>
         </div>
+      )}
+
+      {insumoSeleccionado && (
+      <>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            Cantidad ({insumoSeleccionado.unidad_medida}) <span className="text-red-500">*</span>
+          </label>
+          <input
+            name="cantidad" type="number" required min="0.001" step="0.001"
+            value={cantidad} onChange={(e) => setCantidad(e.target.value)}
+            placeholder="0" className={INPUT}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Costo unitario <span className="text-red-500">*</span></label>
+          <input
+            name="costo_unitario" type="number" required min="0" step="0.01"
+            value={costoUnitario} onChange={(e) => setCostoUnitario(e.target.value)}
+            placeholder="0.00" className={INPUT}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Proveedor</label>
+          <input
+            name="proveedor" type="text"
+            value={proveedorEntrada} onChange={(e) => setProveedorEntrada(e.target.value)}
+            placeholder="Ej: Distribuidora ABC" className={INPUT}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Fecha <span className="text-red-500">*</span></label>
+          <input name="fecha" type="date" required defaultValue={hoy} className={INPUT} />
+        </div>
+      </div>
+
+      <p className="text-xs text-gray-400">
+        Se creará automáticamente un registro en Compras (tipo Costo) y se actualizará el stock del insumo.
+      </p>
+      </>
       )}
 
       {!insumoSeleccionado && (
@@ -206,49 +264,54 @@ function CamposCompra({ state, formAction, pending, compra, isEdit, onClose, hoy
       </>
       )}
 
-      {insumoSeleccionado && (
-        <div className="flex items-start gap-2 px-4 py-3 bg-brand-light rounded-xl text-sm text-brand">
-          <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-          <span>
-            Esta compra corresponde a <strong>{insumoSeleccionado.nombre}</strong>. Regístrala como entrada de stock
-            desde Inventario para que el costo y el stock queden sincronizados (no se debe registrar también aquí).
-          </span>
-        </div>
-      )}
-
       <div className="flex gap-3 pt-1">
         <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
           Cancelar
         </button>
-        {insumoSeleccionado ? (
-          <Link
-            href={`/dashboard/inventario?entrada=${insumoSeleccionado.id}`}
-            className="flex-1 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors text-center"
-          >
-            Ir a Inventario
-          </Link>
-        ) : (
-          <button type="submit" disabled={pending} className="flex-1 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors disabled:opacity-60">
-            {pending ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Registrar compra'}
-          </button>
-        )}
+        <button type="submit" disabled={pending} className="flex-1 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors disabled:opacity-60">
+          {pending ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Registrar compra'}
+        </button>
       </div>
     </form>
   )
 }
 
 function FormCrear({ onClose, hoy, insumos }) {
-  const [state, formAction, pending] = useActionState(crearCompra, null)
-  useEffect(() => { if (state?.success) onClose() }, [state?.success]) // eslint-disable-line
-  return <CamposCompra state={state} formAction={formAction} pending={pending} onClose={onClose} hoy={hoy} insumos={insumos} />
+  const [tipo, setTipo] = useState('')
+  const [insumoId, setInsumoId] = useState('')
+  const insumoSeleccionado = insumos?.find((i) => i.id === insumoId)
+
+  const [stateCompra, formActionCompra, pendingCompra] = useActionState(crearCompra, null)
+  const [stateEntrada, formActionEntrada, pendingEntrada] = useActionState(registrarEntrada, null)
+
+  const state = insumoSeleccionado ? stateEntrada : stateCompra
+  const formAction = insumoSeleccionado ? formActionEntrada : formActionCompra
+  const pending = insumoSeleccionado ? pendingEntrada : pendingCompra
+
+  useEffect(() => {
+    if (stateCompra?.success || stateEntrada?.success) onClose()
+  }, [stateCompra?.success, stateEntrada?.success]) // eslint-disable-line
+
+  return (
+    <CamposCompra
+      state={state} formAction={formAction} pending={pending}
+      onClose={onClose} hoy={hoy} insumos={insumos}
+      tipo={tipo} setTipo={setTipo} insumoId={insumoId} setInsumoId={setInsumoId}
+    />
+  )
 }
 
 function FormEditar({ compra, onClose, hoy }) {
+  const [tipo, setTipo] = useState(compra?.tipo ?? '')
   const [state, formAction, pending] = useActionState(actualizarCompra, null)
   useEffect(() => { if (state?.success) onClose() }, [state?.success]) // eslint-disable-line
-  return <CamposCompra state={state} formAction={formAction} pending={pending} compra={compra} isEdit onClose={onClose} hoy={hoy} />
+  return (
+    <CamposCompra
+      state={state} formAction={formAction} pending={pending} compra={compra} isEdit
+      onClose={onClose} hoy={hoy}
+      tipo={tipo} setTipo={setTipo} insumoId="" setInsumoId={() => {}}
+    />
+  )
 }
 
 export default function ComprasUI({ compras, hoy, insumos }) {

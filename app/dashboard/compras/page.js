@@ -24,7 +24,7 @@ export default async function ComprasPage() {
       .order('fecha', { ascending: false }),
     supabaseAdmin
       .from('insumos')
-      .select('id,nombre,unidad_medida')
+      .select('id,nombre,unidad_medida,costo_unitario,proveedor')
       .eq('tenant_id', profile.tenant_id)
       .eq('activo', true)
       .order('nombre'),
