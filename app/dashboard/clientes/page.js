@@ -12,7 +12,7 @@ export default async function ClientesPage() {
 
   const { data: clientes } = await supabaseAdmin
     .from('clientes')
-    .select('id, nombre, ruc_cedula, tipo_documento, email, telefono, tipo_contribuyente, plazo_credito, limite_credito, activo')
+    .select('id, nombre, ruc_cedula, tipo_documento, email, telefono, tipo_contribuyente, tipo_cliente, plazo_credito, limite_credito, activo')
     .eq('tenant_id', profile.tenant_id)
     .order('nombre')
 

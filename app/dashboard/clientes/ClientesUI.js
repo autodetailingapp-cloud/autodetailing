@@ -1,11 +1,15 @@
 'use client'
 
 import { useState, useEffect, useMemo, useOptimistic, useTransition, useActionState } from 'react'
-import { crearCliente, actualizarCliente, toggleCliente, eliminarCliente, getHistorialCliente } from './actions'
+import {
+  crearCliente, actualizarCliente, toggleCliente, eliminarCliente,
+  getHistorialCliente, buscarClientePorIdentificacion,
+} from './actions'
 
 const TIPOS_DOC = ['Cédula', 'RUC', 'Pasaporte']
 const TIPOS_CONTRIB = ['Consumidor Final', 'RIMPE', 'RUC']
 const PLAZOS = [0, 30, 60, 90]
+const FILTROS_TIPO = ['Frecuente', 'Ocasional', 'Todos']
 
 const fmtMoneda = (n) => `$${Number(n ?? 0).toFixed(2)}`
 const fmtFecha = (s) =>
@@ -38,10 +42,14 @@ function ToggleActivo({ id, activo }) {
 }
 
 // Campos compartidos del formulario de cliente
-function CamposCliente({ state, formAction, pending, cliente, isEdit, onClose }) {
+function CamposCliente({
+  state, formAction, pending, cliente, isEdit, onClose,
+  duplicado, avisoDuplicado, chequeandoDuplicado,
+  onBlurIdentificacion, onChangeIdentificacion, onConfirmarDuplicado, onDescartarDuplicado,
+}) {
   return (
     <form action={formAction} className="space-y-4">
-      {isEdit && <input type="hidden" name="id" value={cliente.id} />}
+      {(isEdit || duplicado) && <input type="hidden" name="id" value={duplicado ? duplicado.id : cliente.id} />}
 
       <div className="flex items-center justify-between mb-1">
         <h2 className="text-lg font-bold text-gray-900">
@@ -97,10 +105,38 @@ function CamposCliente({ state, formAction, pending, cliente, isEdit, onClose })
             name="ruc_cedula" type="text" required
             defaultValue={cliente?.ruc_cedula ?? ''}
             placeholder="0912345678001"
+            onBlur={onBlurIdentificacion}
+            onChange={onChangeIdentificacion}
             className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
           />
+          {chequeandoDuplicado && <p className="text-xs text-gray-400 mt-1">Verificando...</p>}
         </div>
       </div>
+
+      {avisoDuplicado && (
+        <div className="space-y-2 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl">
+          <p className="text-sm text-amber-800">
+            Ya existe un cliente con este RUC/cédula: <strong>{avisoDuplicado.nombre}</strong>. ¿Deseas traerlo y actualizarlo como cliente frecuente?
+          </p>
+          <div className="flex gap-2">
+            <button type="button" onClick={onDescartarDuplicado} className="flex-1 py-2 rounded-lg border border-amber-200 text-xs font-medium text-amber-800 hover:bg-amber-100 transition-colors">
+              No, es un cliente distinto
+            </button>
+            <button type="button" onClick={onConfirmarDuplicado} className="flex-1 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold transition-colors">
+              Sí, actualizar este cliente
+            </button>
+          </div>
+        </div>
+      )}
+
+      {duplicado && (
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-brand-light rounded-xl text-sm text-brand">
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          Actualizando cliente existente: {duplicado.nombre}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -185,7 +221,7 @@ function CamposCliente({ state, formAction, pending, cliente, isEdit, onClose })
           type="submit" disabled={pending}
           className="flex-1 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {pending ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear cliente'}
+          {pending ? 'Guardando...' : (isEdit || duplicado) ? 'Guardar cambios' : 'Crear cliente'}
         </button>
       </div>
     </form>
@@ -193,15 +229,71 @@ function CamposCliente({ state, formAction, pending, cliente, isEdit, onClose })
 }
 
 function FormCrear({ onClose }) {
-  const [state, formAction, pending] = useActionState(crearCliente, null)
+  const [duplicado, setDuplicado] = useState(null)
+  const [avisoDuplicado, setAvisoDuplicado] = useState(null)
+  const [chequeandoDuplicado, setChequeandoDuplicado] = useState(false)
+  const [state, formAction, pending] = useActionState(duplicado ? actualizarCliente : crearCliente, null)
   useEffect(() => { if (state?.success) onClose() }, [state?.success]) // eslint-disable-line
-  return <CamposCliente state={state} formAction={formAction} pending={pending} onClose={onClose} />
+
+  async function handleBlurIdentificacion(e) {
+    const valor = e.target.value.trim()
+    if (!valor || duplicado) return
+    setChequeandoDuplicado(true)
+    const encontrado = await buscarClientePorIdentificacion(valor)
+    setChequeandoDuplicado(false)
+    setAvisoDuplicado(encontrado)
+  }
+
+  function handleChangeIdentificacion() {
+    if (avisoDuplicado) setAvisoDuplicado(null)
+    if (duplicado) setDuplicado(null)
+  }
+
+  return (
+    <CamposCliente
+      state={state} formAction={formAction} pending={pending} onClose={onClose}
+      duplicado={duplicado} avisoDuplicado={avisoDuplicado} chequeandoDuplicado={chequeandoDuplicado}
+      onBlurIdentificacion={handleBlurIdentificacion}
+      onChangeIdentificacion={handleChangeIdentificacion}
+      onConfirmarDuplicado={() => { setDuplicado(avisoDuplicado); setAvisoDuplicado(null) }}
+      onDescartarDuplicado={() => setAvisoDuplicado(null)}
+    />
+  )
 }
 
 function FormEditar({ cliente, onClose }) {
+  const [duplicado, setDuplicado] = useState(null)
+  const [avisoDuplicado, setAvisoDuplicado] = useState(null)
+  const [chequeandoDuplicado, setChequeandoDuplicado] = useState(false)
   const [state, formAction, pending] = useActionState(actualizarCliente, null)
   useEffect(() => { if (state?.success) onClose() }, [state?.success]) // eslint-disable-line
-  return <CamposCliente state={state} formAction={formAction} pending={pending} cliente={cliente} isEdit onClose={onClose} />
+
+  async function handleBlurIdentificacion(e) {
+    const valor = e.target.value.trim()
+    if (!valor || valor === cliente.ruc_cedula || duplicado) return
+    setChequeandoDuplicado(true)
+    const encontrado = await buscarClientePorIdentificacion(valor)
+    setChequeandoDuplicado(false)
+    // Si la coincidencia es el propio cliente que se está editando, no hay conflicto real.
+    if (encontrado && encontrado.id === cliente.id) return
+    setAvisoDuplicado(encontrado)
+  }
+
+  function handleChangeIdentificacion() {
+    if (avisoDuplicado) setAvisoDuplicado(null)
+    if (duplicado) setDuplicado(null)
+  }
+
+  return (
+    <CamposCliente
+      state={state} formAction={formAction} pending={pending} cliente={cliente} isEdit onClose={onClose}
+      duplicado={duplicado} avisoDuplicado={avisoDuplicado} chequeandoDuplicado={chequeandoDuplicado}
+      onBlurIdentificacion={handleBlurIdentificacion}
+      onChangeIdentificacion={handleChangeIdentificacion}
+      onConfirmarDuplicado={() => { setDuplicado(avisoDuplicado); setAvisoDuplicado(null) }}
+      onDescartarDuplicado={() => setAvisoDuplicado(null)}
+    />
+  )
 }
 
 // Modal de historial de compras
@@ -323,6 +415,7 @@ function ModalConfirmar({ nombre, onConfirm, onCancel, pending }) {
 
 export default function ClientesUI({ clientes }) {
   const [search, setSearch] = useState('')
+  const [filtroTipo, setFiltroTipo] = useState('Frecuente')
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [historialCliente, setHistorialCliente] = useState(null)
@@ -343,17 +436,22 @@ export default function ClientesUI({ clientes }) {
     setConfirmDelete(null)
   }
 
+  const porTipo = useMemo(() => {
+    if (filtroTipo === 'Todos') return clientes
+    return clientes.filter((c) => (c.tipo_cliente ?? 'Frecuente') === filtroTipo)
+  }, [clientes, filtroTipo])
+
   const filtrados = useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q) return clientes
-    return clientes.filter(
+    if (!q) return porTipo
+    return porTipo.filter(
       (c) =>
         c.nombre?.toLowerCase().includes(q) ||
         c.ruc_cedula?.toLowerCase().includes(q) ||
         c.email?.toLowerCase().includes(q) ||
         c.telefono?.toLowerCase().includes(q)
     )
-  }, [clientes, search])
+  }, [porTipo, search])
 
   const totalActivos = clientes.filter((c) => c.activo).length
 
@@ -377,6 +475,23 @@ export default function ClientesUI({ clientes }) {
           Nuevo cliente
         </button>
       </div>
+
+      {/* Filtro por tipo de cliente */}
+      {clientes.length > 0 && (
+        <div className="flex gap-2 mb-4">
+          {FILTROS_TIPO.map((t) => (
+            <button
+              key={t}
+              onClick={() => setFiltroTipo(t)}
+              className={`px-3.5 py-2 rounded-xl text-sm font-medium transition-colors ${
+                filtroTipo === t ? 'bg-brand text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
+              }`}
+            >
+              {t === 'Frecuente' ? 'Frecuentes' : t === 'Ocasional' ? 'Ocasionales' : 'Todos'}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Buscador */}
       {clientes.length > 0 && (
@@ -428,15 +543,23 @@ export default function ClientesUI({ clientes }) {
         </div>
       )}
 
-      {/* Sin resultados en búsqueda */}
+      {/* Sin resultados en búsqueda o filtro */}
       {clientes.length > 0 && filtrados.length === 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
           <p className="text-sm text-gray-500">
-            Sin resultados para <span className="font-semibold">"{search}"</span>
+            {search
+              ? <>Sin resultados para <span className="font-semibold">"{search}"</span></>
+              : `Sin clientes ${filtroTipo === 'Frecuente' ? 'frecuentes' : filtroTipo === 'Ocasional' ? 'ocasionales' : ''}`}
           </p>
-          <button onClick={() => setSearch('')} className="mt-2 text-sm text-brand hover:text-brand-dark transition-colors">
-            Limpiar búsqueda
-          </button>
+          {search ? (
+            <button onClick={() => setSearch('')} className="mt-2 text-sm text-brand hover:text-brand-dark transition-colors">
+              Limpiar búsqueda
+            </button>
+          ) : filtroTipo !== 'Todos' && (
+            <button onClick={() => setFiltroTipo('Todos')} className="mt-2 text-sm text-brand hover:text-brand-dark transition-colors">
+              Ver todos los clientes
+            </button>
+          )}
         </div>
       )}
 
@@ -465,7 +588,12 @@ export default function ClientesUI({ clientes }) {
                     className={`hover:bg-gray-50/40 transition-colors ${!c.activo ? 'opacity-50' : ''}`}
                   >
                     <td className="px-6 py-4">
-                      <p className="font-medium text-gray-900">{c.nombre}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-gray-900">{c.nombre}</p>
+                        <span className={`px-1.5 py-0.5 text-[10px] font-semibold rounded ${(c.tipo_cliente ?? 'Frecuente') === 'Ocasional' ? 'bg-gray-100 text-gray-500' : 'bg-brand-light text-brand'}`}>
+                          {(c.tipo_cliente ?? 'Frecuente') === 'Ocasional' ? 'Ocasional' : 'Frecuente'}
+                        </span>
+                      </div>
                       {c.email && <p className="text-xs text-gray-400 mt-0.5">{c.email}</p>}
                     </td>
                     <td className="px-6 py-4">
@@ -537,7 +665,12 @@ export default function ClientesUI({ clientes }) {
               <div key={c.id} className={`p-4 ${!c.activo ? 'opacity-50' : ''}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 truncate">{c.nombre}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-gray-900 truncate">{c.nombre}</p>
+                      <span className={`flex-shrink-0 px-1.5 py-0.5 text-[10px] font-semibold rounded ${(c.tipo_cliente ?? 'Frecuente') === 'Ocasional' ? 'bg-gray-100 text-gray-500' : 'bg-brand-light text-brand'}`}>
+                        {(c.tipo_cliente ?? 'Frecuente') === 'Ocasional' ? 'Ocasional' : 'Frecuente'}
+                      </span>
+                    </div>
                     <p className="text-xs text-gray-400 mt-0.5">
                       {c.tipo_documento} · {c.ruc_cedula}
                     </p>
@@ -575,7 +708,7 @@ export default function ClientesUI({ clientes }) {
           </div>
 
           {/* Footer con conteo de resultados */}
-          {search && (
+          {(search || filtroTipo !== 'Todos') && (
             <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/40">
               <p className="text-xs text-gray-400">
                 {filtrados.length} de {clientes.length} clientes

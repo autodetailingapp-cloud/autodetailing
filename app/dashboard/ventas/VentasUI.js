@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
-import { crearVenta, anularVenta, getDetalleVenta, guardarClienteDesdeFactura } from './actions'
+import { crearVenta, anularVenta, getDetalleVenta } from './actions'
 
 const fmt = (n) => `$${Number(n ?? 0).toFixed(2)}`
 const fmtFecha = (s) =>
@@ -256,8 +256,6 @@ function FormVenta({ clientes, servicios, ivaAplica, nextNumero, hoy, onClose })
   const [error, setError] = useState(null)
   const [isPending, startTransition] = useTransition()
   const [ventaGuardada, setVentaGuardada] = useState(null)
-  const [guardandoCliente, setGuardandoCliente] = useState(false)
-  const [clienteGuardado, setClienteGuardado] = useState(false)
 
   const tipoDoc = pideFactura ? 'Factura' : 'Nota de Venta'
   const clienteSeleccionado = modoCliente === 'registrado' ? clientes.find((c) => c.id === clienteId) : null
@@ -344,19 +342,6 @@ function FormVenta({ clientes, servicios, ivaAplica, nextNumero, hoy, onClose })
     })
   }
 
-  async function handleGuardarCliente() {
-    setGuardandoCliente(true)
-    const result = await guardarClienteDesdeFactura({
-      nombre: facturaNombre.trim(),
-      ruc_cedula: facturaRuc.trim(),
-      direccion: facturaDireccion.trim() || null,
-      email: facturaEmail.trim() || null,
-    })
-    setGuardandoCliente(false)
-    if (result?.error) { setError(result.error); return }
-    setClienteGuardado(true)
-  }
-
   if (ventaGuardada) {
     return (
       <div className="space-y-5">
@@ -368,33 +353,12 @@ function FormVenta({ clientes, servicios, ivaAplica, nextNumero, hoy, onClose })
         <div className="text-center">
           <h2 className="text-lg font-bold text-gray-900">Venta #{ventaGuardada.numero_documento} registrada</h2>
           <p className="text-sm text-gray-500 mt-1">
-            {clienteGuardado
-              ? 'El cliente fue guardado en la base de datos.'
-              : `¿Deseas guardar a ${facturaNombre} en tu base de clientes para tus próximas ventas?`}
+            {facturaNombre} quedó registrado en tu base de clientes para tus próximas ventas.
           </p>
         </div>
-        {!clienteGuardado && error && (
-          <p className="px-3.5 py-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm">{error}</p>
-        )}
-        <div className="flex gap-3 pt-1">
-          {clienteGuardado ? (
-            <button onClick={onClose} className="flex-1 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors">
-              Cerrar
-            </button>
-          ) : (
-            <>
-              <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-                No, gracias
-              </button>
-              <button
-                onClick={handleGuardarCliente} disabled={guardandoCliente}
-                className="flex-1 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors disabled:opacity-60"
-              >
-                {guardandoCliente ? 'Guardando...' : 'Guardar cliente'}
-              </button>
-            </>
-          )}
-        </div>
+        <button onClick={onClose} className="w-full py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors">
+          Cerrar
+        </button>
       </div>
     )
   }

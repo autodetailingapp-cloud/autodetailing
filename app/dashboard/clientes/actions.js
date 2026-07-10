@@ -35,6 +35,7 @@ export async function crearCliente(prevState, formData) {
       telefono,
       direccion,
       tipo_contribuyente,
+      tipo_cliente: 'Frecuente',
       plazo_credito: isNaN(plazo_credito) ? 0 : plazo_credito,
       limite_credito: isNaN(limite_credito) ? 0 : limite_credito,
       activo: true,
@@ -44,6 +45,23 @@ export async function crearCliente(prevState, formData) {
 
   revalidatePath('/dashboard/clientes')
   return { success: true }
+}
+
+export async function buscarClientePorIdentificacion(ruc_cedula) {
+  const profile = await getProfile()
+  if (!profile) return null
+
+  const valor = ruc_cedula?.toString().trim()
+  if (!valor) return null
+
+  const { data } = await supabaseAdmin
+    .from('clientes')
+    .select('id, nombre, tipo_cliente')
+    .eq('tenant_id', profile.tenant_id)
+    .eq('ruc_cedula', valor)
+    .maybeSingle()
+
+  return data ?? null
 }
 
 export async function actualizarCliente(prevState, formData) {
@@ -69,6 +87,9 @@ export async function actualizarCliente(prevState, formData) {
     .update({
       nombre, ruc_cedula, tipo_documento, email, telefono, direccion,
       tipo_contribuyente,
+      // Un cliente editado/gestionado explícitamente desde este módulo pasa (o se
+      // mantiene) como Frecuente — solo Ventas crea clientes Ocasionales automáticos.
+      tipo_cliente: 'Frecuente',
       plazo_credito: isNaN(plazo_credito) ? 0 : plazo_credito,
       limite_credito: isNaN(limite_credito) ? 0 : limite_credito,
     })
