@@ -11,6 +11,7 @@ const NAV_ITEMS = {
       key: 'dashboard',
       label: 'Dashboard',
       href: '/dashboard',
+      group: 'Inicio',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -22,6 +23,7 @@ const NAV_ITEMS = {
       key: 'servicios',
       label: 'Servicios',
       href: '/dashboard/servicios',
+      group: 'Configuración inicial',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -33,6 +35,7 @@ const NAV_ITEMS = {
       key: 'clientes',
       label: 'Clientes',
       href: '/dashboard/clientes',
+      group: 'Configuración inicial',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -41,9 +44,22 @@ const NAV_ITEMS = {
       ),
     },
     {
+      key: 'inventario',
+      label: 'Inventario',
+      href: '/dashboard/inventario',
+      group: 'Configuración inicial',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      ),
+    },
+    {
       key: 'ventas',
       label: 'Ventas',
       href: '/dashboard/ventas',
+      group: 'Operación diaria',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -55,6 +71,7 @@ const NAV_ITEMS = {
       key: 'compras',
       label: 'Compras',
       href: '/dashboard/compras',
+      group: 'Operación diaria',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -63,20 +80,10 @@ const NAV_ITEMS = {
       ),
     },
     {
-      key: 'inventario',
-      label: 'Inventario',
-      href: '/dashboard/inventario',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
-            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-        </svg>
-      ),
-    },
-    {
       key: 'caja',
       label: 'Caja diaria',
       href: '/dashboard/caja',
+      group: 'Operación diaria',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -88,6 +95,7 @@ const NAV_ITEMS = {
       key: 'cartera',
       label: 'Cartera',
       href: '/dashboard/cartera',
+      group: 'Cobros',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -99,6 +107,7 @@ const NAV_ITEMS = {
       key: 'nomina',
       label: 'Nómina',
       href: '/dashboard/nomina',
+      group: 'Personal',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -110,6 +119,7 @@ const NAV_ITEMS = {
       key: 'activos',
       label: 'Activos fijos',
       href: '/dashboard/activos',
+      group: 'Activos',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -121,6 +131,19 @@ const NAV_ITEMS = {
       key: 'reportes',
       label: 'Reportes',
       href: '/dashboard/reportes',
+      group: 'Finanzas',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      ),
+    },
+    {
+      key: 'dashboard-ejecutivo',
+      label: 'Dashboard Ejecutivo',
+      href: '/dashboard-ejecutivo',
+      group: 'Finanzas',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -132,6 +155,7 @@ const NAV_ITEMS = {
       key: 'pyg',
       label: 'P&G',
       href: '/dashboard/pyg',
+      group: 'Finanzas',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -143,6 +167,7 @@ const NAV_ITEMS = {
       key: 'balance',
       label: 'Balance',
       href: '/dashboard/balance',
+      group: 'Finanzas',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -154,6 +179,7 @@ const NAV_ITEMS = {
       key: 'flujo',
       label: 'Flujo de caja',
       href: '/dashboard/flujo',
+      group: 'Finanzas',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -165,6 +191,7 @@ const NAV_ITEMS = {
       key: 'kpi',
       label: 'KPI',
       href: '/dashboard/kpi',
+      group: 'Finanzas',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -178,6 +205,7 @@ const NAV_ITEMS = {
       key: 'tributario',
       label: 'Tributario SRI',
       href: '/dashboard/tributario',
+      group: 'Finanzas',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -189,6 +217,7 @@ const NAV_ITEMS = {
       key: 'usuarios',
       label: 'Usuarios',
       href: '/dashboard/usuarios',
+      group: 'Sistema',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -200,6 +229,7 @@ const NAV_ITEMS = {
       key: 'configuracion',
       label: 'Configuración',
       href: '/dashboard/configuracion',
+      group: 'Sistema',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
@@ -210,9 +240,9 @@ const NAV_ITEMS = {
       ),
     },
   ],
-  supervisor: ['dashboard', 'servicios', 'clientes', 'ventas', 'compras', 'inventario', 'caja', 'cartera', 'nomina', 'reportes'],
+  supervisor: ['dashboard', 'dashboard-ejecutivo', 'servicios', 'clientes', 'ventas', 'compras', 'inventario', 'caja', 'cartera', 'nomina', 'reportes'],
   cajero: ['dashboard', 'servicios', 'clientes', 'ventas', 'caja'],
-  lectura: ['dashboard', 'inventario', 'cartera', 'nomina', 'activos', 'reportes', 'pyg', 'balance', 'flujo', 'kpi', 'tributario'],
+  lectura: ['dashboard', 'dashboard-ejecutivo', 'inventario', 'cartera', 'nomina', 'activos', 'reportes', 'pyg', 'balance', 'flujo', 'kpi', 'tributario'],
 }
 
 const ROL_LABELS = {
@@ -233,6 +263,7 @@ function getItems(rol) {
 
 export default function Sidebar({ profile }) {
   const [open, setOpen] = useState(false)
+  const [gruposColapsados, setGruposColapsados] = useState({})
   const pathname = usePathname()
 
   const rol = profile?.rol ?? 'lectura'
@@ -241,12 +272,18 @@ export default function Sidebar({ profile }) {
   const tenantNombre = tenant?.nombre ?? 'AutoDetailing'
   const userName = profile?.nombre ?? 'Usuario'
   const initial = userName[0]?.toUpperCase() ?? 'U'
-  const onboardingPaso = Math.min(Math.max(tenant?.onboarding_paso ?? 0, 0), 6)
+  const onboardingPaso = Math.min(Math.max(tenant?.onboarding_paso ?? 0, 0), 7)
   const onboardingPendiente = !!tenant && !tenant.onboarding_completado
 
   function isActive(href) {
     if (href === '/dashboard') return pathname === '/dashboard'
     return pathname.startsWith(href)
+  }
+
+  const grupoActivo = items.find((item) => isActive(item.href))?.group
+
+  function toggleGrupo(nombre) {
+    setGruposColapsados((prev) => ({ ...prev, [nombre]: !prev[nombre] }))
   }
 
   const sidebar = (
@@ -274,37 +311,57 @@ export default function Sidebar({ profile }) {
         >
           <div className="flex items-center justify-between mb-1.5">
             <p className="text-xs font-semibold text-brand">Configuración inicial</p>
-            <p className="text-xs font-semibold text-brand">{onboardingPaso}/6</p>
+            <p className="text-xs font-semibold text-brand">{onboardingPaso}/7</p>
           </div>
           <div className="w-full h-1.5 bg-white/70 rounded-full overflow-hidden">
-            <div className="h-full bg-brand transition-all duration-300" style={{ width: `${(onboardingPaso / 6) * 100}%` }} />
+            <div className="h-full bg-brand transition-all duration-300" style={{ width: `${(onboardingPaso / 7) * 100}%` }} />
           </div>
         </Link>
       )}
 
       {/* Navegación */}
       <div className="flex-1 px-3 py-4 overflow-y-auto space-y-0.5">
-        {items.map((item) => {
+        {items.map((item, i) => {
           const active = isActive(item.href)
+          const mostrarEncabezado = item.group && item.group !== items[i - 1]?.group
+          const expandido = item.group === grupoActivo || !gruposColapsados[item.group]
           return (
-            <Link
-              key={item.key}
-              href={item.href}
-              onClick={() => setOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                active
-                  ? 'bg-brand-light text-brand'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`}
-            >
-              <span className={active ? 'text-brand' : 'text-gray-400'}>
-                {item.icon}
-              </span>
-              {item.label}
-              {active && (
-                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-brand" />
+            <div key={item.key}>
+              {mostrarEncabezado && (
+                <button
+                  type="button"
+                  onClick={() => toggleGrupo(item.group)}
+                  className={`w-full flex items-center justify-between px-3 text-[10px] font-semibold uppercase tracking-wide text-gray-400 hover:text-gray-600 transition-colors ${i === 0 ? 'mb-1' : 'mt-4 mb-1'}`}
+                >
+                  {item.group}
+                  <svg
+                    className={`w-3 h-3 transition-transform duration-200 ${expandido ? 'rotate-0' : '-rotate-90'}`}
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
               )}
-            </Link>
+              {expandido && (
+                <Link
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                    active
+                      ? 'bg-brand-light text-brand'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <span className={active ? 'text-brand' : 'text-gray-400'}>
+                    {item.icon}
+                  </span>
+                  {item.label}
+                  {active && (
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-brand" />
+                  )}
+                </Link>
+              )}
+            </div>
           )
         })}
       </div>

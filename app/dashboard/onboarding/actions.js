@@ -8,16 +8,12 @@ export async function actualizarNegocioOnboarding(formData) {
   const profile = await getProfile()
   if (!profile) return { error: 'No autorizado' }
 
-  const direccion = formData.get('direccion')?.toString().trim()
-  const telefono = formData.get('telefono')?.toString().trim()
-  const regimen_sri = formData.get('regimen_sri')?.toString()
   const logo = formData.get('logo')
 
-  if (!direccion) return { error: 'La dirección es requerida' }
-  if (!telefono) return { error: 'El teléfono es requerido' }
-  if (!regimen_sri) return { error: 'El régimen SRI es requerido' }
-
-  const update = { direccion, telefono, regimen_sri, onboarding_paso: 1 }
+  // Nombre, RUC/cédula, teléfono, dirección y régimen SRI ya se capturaron en el
+  // registro (app/registro/page.js → registrarAction). Este paso solo confirma esos
+  // datos (solo lectura) y agrega el logo, que es lo único genuinamente nuevo aquí.
+  const update = { onboarding_paso: 1 }
 
   if (logo instanceof File && logo.size > 0) {
     const { data: buckets } = await supabaseAdmin.storage.listBuckets()
@@ -73,7 +69,7 @@ export async function completarOnboarding() {
 
   const { error } = await supabaseAdmin
     .from('tenants')
-    .update({ onboarding_completado: true, onboarding_paso: 6 })
+    .update({ onboarding_completado: true, onboarding_paso: 7 })
     .eq('id', profile.tenant_id)
 
   if (error) return { error: error.message }
@@ -106,6 +102,18 @@ export async function listarColaboradoresOnboarding() {
   return data ?? []
 }
 
+export async function listarClientesOnboarding() {
+  const profile = await getProfile()
+  if (!profile) return []
+  const { data } = await supabaseAdmin
+    .from('clientes')
+    .select('id, nombre, tipo_documento, ruc_cedula, telefono, email')
+    .eq('tenant_id', profile.tenant_id)
+    .eq('activo', true)
+    .order('created_at')
+  return data ?? []
+}
+
 export async function listarActivosOnboarding() {
   const profile = await getProfile()
   if (!profile) return []
@@ -132,11 +140,12 @@ export async function listarInsumosOnboarding() {
 
 export async function obtenerResumenOnboarding() {
   const profile = await getProfile()
-  if (!profile) return { servicios: 0, colaboradores: 0, activos: 0, insumos: 0 }
+  if (!profile) return { servicios: 0, clientes: 0, colaboradores: 0, activos: 0, insumos: 0 }
 
   const tenantId = profile.tenant_id
-  const [servicios, colaboradores, activos, insumos] = await Promise.all([
+  const [servicios, clientes, colaboradores, activos, insumos] = await Promise.all([
     supabaseAdmin.from('servicios').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('activo', true),
+    supabaseAdmin.from('clientes').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('activo', true),
     supabaseAdmin.from('colaboradores').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('activo', true),
     supabaseAdmin.from('activos_fijos').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('activo', true),
     supabaseAdmin.from('insumos').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('activo', true),
@@ -144,6 +153,7 @@ export async function obtenerResumenOnboarding() {
 
   return {
     servicios: servicios.count ?? 0,
+    clientes: clientes.count ?? 0,
     colaboradores: colaboradores.count ?? 0,
     activos: activos.count ?? 0,
     insumos: insumos.count ?? 0,

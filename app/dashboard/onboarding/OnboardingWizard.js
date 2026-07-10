@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useTransition } from 'react'
 import { crearServicio, eliminarServicio } from '../servicios/actions'
+import { crearCliente, eliminarCliente } from '../clientes/actions'
 import { crearColaborador, eliminarColaborador } from '../nomina/actions'
 import { crearActivo, eliminarActivo } from '../activos/actions'
 import { crearInsumo, eliminarInsumo } from '../inventario/actions'
 import { CATEGORIAS_SRI } from '../activos/ActivosUI'
 import {
   actualizarNegocioOnboarding, avanzarPasoOnboarding, completarOnboarding,
-  listarServiciosOnboarding, listarColaboradoresOnboarding,
+  listarServiciosOnboarding, listarClientesOnboarding, listarColaboradoresOnboarding,
   listarActivosOnboarding, listarInsumosOnboarding, obtenerResumenOnboarding,
 } from './actions'
 
@@ -16,26 +17,18 @@ const INPUT = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focu
 const SELECT = INPUT + ' bg-white'
 const fmt = (n) => `$${Number(n ?? 0).toFixed(2)}`
 
-const REGIMENES = [
-  { value: 'RIMPE Popular', label: 'RIMPE Popular' },
-  { value: 'RIMPE Emprendedor', label: 'RIMPE Emprendedor' },
-  { value: 'RUC General', label: 'RUC General' },
-]
-
 const TITULOS = [
-  'Bienvenida y datos del negocio',
+  'Bienvenida',
   'Configura tus servicios',
+  'Agrega tus clientes',
+  'Configura tu inventario básico',
   'Agrega tus colaboradores',
   'Registra tus equipos',
-  'Configura tu inventario básico',
   '¡Listo para empezar!',
 ]
 
 // ——— Paso 1: Bienvenida ———
 function PasoBienvenida({ tenant, onNext }) {
-  const [direccion, setDireccion] = useState(tenant.direccion ?? '')
-  const [telefono, setTelefono] = useState(tenant.telefono ?? '')
-  const [regimen, setRegimen] = useState(tenant.regimen_sri ?? '')
   const [logo, setLogo] = useState(null)
   const [error, setError] = useState(null)
   const [isPending, startTransition] = useTransition()
@@ -44,9 +37,6 @@ function PasoBienvenida({ tenant, onNext }) {
     e.preventDefault()
     setError(null)
     const fd = new FormData()
-    fd.set('direccion', direccion)
-    fd.set('telefono', telefono)
-    fd.set('regimen_sri', regimen)
     if (logo) fd.set('logo', logo)
 
     startTransition(async () => {
@@ -58,25 +48,22 @@ function PasoBienvenida({ tenant, onNext }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <p className="text-sm text-gray-500">Confirma los datos de <strong>{tenant.nombre}</strong> antes de empezar.</p>
+      <p className="text-sm text-gray-500">Estos son los datos de tu negocio, ya registrados. Si algo está mal, puedes actualizarlo más adelante.</p>
       {error && <p className="px-3.5 py-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm">{error}</p>}
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">Dirección completa <span className="text-red-500">*</span></label>
-        <input type="text" required value={direccion} onChange={(e) => setDireccion(e.target.value)} placeholder="Av. Principal 123, Guayaquil" className={INPUT} />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">Teléfono <span className="text-red-500">*</span></label>
-        <input type="tel" required value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="0991234567" className={INPUT} />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">Régimen tributario SRI <span className="text-red-500">*</span></label>
-        <select required value={regimen} onChange={(e) => setRegimen(e.target.value)} className={SELECT}>
-          <option value="" disabled>Selecciona el régimen</option>
-          {REGIMENES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-        </select>
+      <div className="space-y-1 px-4 py-3 bg-gray-50 rounded-xl text-sm">
+        <div className="flex justify-between">
+          <span className="text-gray-400">Negocio</span>
+          <span className="font-medium text-gray-800">{tenant.nombre}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">RUC / Cédula</span>
+          <span className="font-medium text-gray-800">{tenant.ruc_cedula ?? '—'}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">Régimen SRI</span>
+          <span className="font-medium text-gray-800">{tenant.regimen_sri ?? '—'}</span>
+        </div>
       </div>
 
       <div>
@@ -196,7 +183,100 @@ function PasoServicios({ onNext }) {
   )
 }
 
-// ——— Paso 3: Colaboradores ———
+// ——— Paso: Clientes ———
+const TIPOS_DOC_CLIENTE = ['Cédula', 'RUC']
+
+function PasoClientes({ onNext, onSkip }) {
+  const [lista, setLista] = useState([])
+  const [nombre, setNombre] = useState('')
+  const [tipoDocumento, setTipoDocumento] = useState('Cédula')
+  const [rucCedula, setRucCedula] = useState('')
+  const [telefono, setTelefono] = useState('')
+  const [email, setEmail] = useState('')
+  const [error, setError] = useState(null)
+  const [isPending, startTransition] = useTransition()
+
+  function cargar() { listarClientesOnboarding().then(setLista) }
+  useEffect(() => { cargar() }, [])
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    setError(null)
+    if (!nombre.trim() || !rucCedula.trim()) { setError('Nombre e identificación son requeridos'); return }
+    const fd = new FormData()
+    fd.set('nombre', nombre.trim())
+    fd.set('tipo_documento', tipoDocumento)
+    fd.set('ruc_cedula', rucCedula.trim())
+    fd.set('telefono', telefono.trim())
+    fd.set('email', email.trim())
+    // Consumidor Final es el tipo de contribuyente por defecto para clientes cargados
+    // rápido en el onboarding; se puede afinar luego desde el módulo Clientes.
+    fd.set('tipo_contribuyente', 'Consumidor Final')
+    startTransition(async () => {
+      const result = await crearCliente(null, fd)
+      if (result?.error) { setError(result.error); return }
+      setNombre(''); setRucCedula(''); setTelefono(''); setEmail('')
+      cargar()
+    })
+  }
+
+  function handleEliminar(id) {
+    startTransition(async () => { await eliminarCliente(id); cargar() })
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-gray-500">Registra los clientes frecuentes de tu negocio (opcional — puedes vender a "Consumidor Final" sin registrar a nadie).</p>
+      {error && <p className="px-3.5 py-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm">{error}</p>}
+
+      <form onSubmit={handleSubmit} className="space-y-2">
+        <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre completo" className={INPUT} />
+        <div className="grid grid-cols-2 gap-2">
+          <select value={tipoDocumento} onChange={(e) => setTipoDocumento(e.target.value)} className={SELECT}>
+            {TIPOS_DOC_CLIENTE.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <input type="text" value={rucCedula} onChange={(e) => setRucCedula(e.target.value)} placeholder="Identificación" className={INPUT} />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <input type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Teléfono (opcional)" className={INPUT} />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email (opcional)" className={INPUT} />
+        </div>
+        <button type="submit" disabled={isPending} className="w-full py-2 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors disabled:opacity-60">
+          Agregar cliente
+        </button>
+      </form>
+
+      {lista.length > 0 && (
+        <div className="space-y-1.5">
+          {lista.map((c) => (
+            <div key={c.id} className="flex items-center justify-between px-4 py-2.5 bg-gray-50 rounded-xl text-sm">
+              <div>
+                <p className="font-medium text-gray-800">{c.nombre}</p>
+                <p className="text-xs text-gray-400">{c.tipo_documento}: {c.ruc_cedula}{c.telefono ? ` · ${c.telefono}` : ''}</p>
+              </div>
+              <button type="button" onClick={() => handleEliminar(c.id)} className="text-gray-300 hover:text-red-400 transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex gap-3">
+        <button type="button" onClick={() => onSkip(3)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+          Saltar este paso
+        </button>
+        <button type="button" onClick={() => onNext(3)} className="flex-1 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors">
+          Siguiente
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ——— Paso: Colaboradores ———
 function PasoColaboradores({ onNext, onSkip }) {
   const [lista, setLista] = useState([])
   const [nombre, setNombre] = useState('')
@@ -270,10 +350,10 @@ function PasoColaboradores({ onNext, onSkip }) {
       )}
 
       <div className="flex gap-3">
-        <button type="button" onClick={() => onSkip(3)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+        <button type="button" onClick={() => onSkip(5)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
           Saltar este paso
         </button>
-        <button type="button" onClick={() => onNext(3)} className="flex-1 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors">
+        <button type="button" onClick={() => onNext(5)} className="flex-1 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors">
           Siguiente
         </button>
       </div>
@@ -281,7 +361,7 @@ function PasoColaboradores({ onNext, onSkip }) {
   )
 }
 
-// ——— Paso 4: Activos fijos ———
+// ——— Paso: Activos fijos ———
 const ACTIVOS_SUGERIDOS = ['Aspiradora industrial', 'Lavadora a presión', 'Pulidora orbital']
 
 function PasoActivos({ onNext, onSkip }) {
@@ -372,10 +452,10 @@ function PasoActivos({ onNext, onSkip }) {
       )}
 
       <div className="flex gap-3">
-        <button type="button" onClick={() => onSkip(4)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+        <button type="button" onClick={() => onSkip(6)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
           Saltar este paso
         </button>
-        <button type="button" onClick={() => onNext(4)} className="flex-1 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors">
+        <button type="button" onClick={() => onNext(6)} className="flex-1 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors">
           Siguiente
         </button>
       </div>
@@ -383,7 +463,7 @@ function PasoActivos({ onNext, onSkip }) {
   )
 }
 
-// ——— Paso 5: Inventario ———
+// ——— Paso: Inventario ———
 const INSUMOS_SUGERIDOS = [
   { nombre: 'Shampoo para autos', unidad: 'litros' },
   { nombre: 'Cera carnauba', unidad: 'kg' },
@@ -391,7 +471,7 @@ const INSUMOS_SUGERIDOS = [
   { nombre: 'Microfibras', unidad: 'unidades' },
 ]
 
-function PasoInventario({ onNext, onSkip }) {
+function PasoInventario({ onNext }) {
   const [lista, setLista] = useState([])
   const [nombre, setNombre] = useState('')
   const [unidad, setUnidad] = useState('')
@@ -479,19 +559,18 @@ function PasoInventario({ onNext, onSkip }) {
         </div>
       )}
 
-      <div className="flex gap-3">
-        <button type="button" onClick={() => onSkip(5)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-          Saltar este paso
-        </button>
-        <button type="button" onClick={() => onNext(5)} className="flex-1 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors">
-          Siguiente
-        </button>
-      </div>
+      <button
+        type="button" disabled={lista.length === 0}
+        onClick={() => onNext(4)}
+        className="w-full py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        Siguiente {lista.length === 0 && '(agrega al menos 1 insumo)'}
+      </button>
     </div>
   )
 }
 
-// ——— Paso 6: Resumen ———
+// ——— Paso: Resumen ———
 function PasoResumen() {
   const [resumen, setResumen] = useState(null)
   const [isPending, startTransition] = useTransition()
@@ -507,9 +586,10 @@ function PasoResumen() {
 
   const items = resumen ? [
     { label: 'Servicios creados', value: resumen.servicios },
+    { label: 'Clientes registrados', value: resumen.clientes },
+    { label: 'Insumos en inventario', value: resumen.insumos },
     { label: 'Colaboradores registrados', value: resumen.colaboradores },
     { label: 'Equipos registrados', value: resumen.activos },
-    { label: 'Insumos en inventario', value: resumen.insumos },
   ] : []
 
   return (
@@ -542,14 +622,15 @@ function PasoResumen() {
 
 // ——— Wizard principal ———
 export default function OnboardingWizard({ tenant }) {
-  const pasoInicial = Math.min(Math.max(tenant?.onboarding_paso ?? 0, 0), 5)
+  const ULTIMO_PASO = TITULOS.length - 1
+  const pasoInicial = Math.min(Math.max(tenant?.onboarding_paso ?? 0, 0), ULTIMO_PASO)
   const [paso, setPaso] = useState(pasoInicial)
 
   if (!tenant || tenant.onboarding_completado) return null
 
   function avanzar(siguiente) {
     setPaso(siguiente)
-    if (siguiente < 5) avanzarPasoOnboarding(siguiente)
+    if (siguiente < ULTIMO_PASO) avanzarPasoOnboarding(siguiente)
   }
 
   return (
@@ -558,20 +639,21 @@ export default function OnboardingWizard({ tenant }) {
       <div className="relative z-10 w-full max-w-lg bg-white rounded-2xl shadow-xl border border-gray-100 p-6 max-h-[95vh] overflow-y-auto">
         <div className="mb-5">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold text-brand uppercase tracking-wide">Paso {paso + 1} de 6</p>
+            <p className="text-xs font-semibold text-brand uppercase tracking-wide">Paso {paso + 1} de {TITULOS.length}</p>
           </div>
           <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mb-3">
-            <div className="h-full bg-brand transition-all duration-300" style={{ width: `${((paso + 1) / 6) * 100}%` }} />
+            <div className="h-full bg-brand transition-all duration-300" style={{ width: `${((paso + 1) / TITULOS.length) * 100}%` }} />
           </div>
           <h2 className="text-lg font-bold text-gray-900">{TITULOS[paso]}</h2>
         </div>
 
         {paso === 0 && <PasoBienvenida tenant={tenant} onNext={avanzar} />}
         {paso === 1 && <PasoServicios onNext={avanzar} />}
-        {paso === 2 && <PasoColaboradores onNext={avanzar} onSkip={avanzar} />}
-        {paso === 3 && <PasoActivos onNext={avanzar} onSkip={avanzar} />}
-        {paso === 4 && <PasoInventario onNext={avanzar} onSkip={avanzar} />}
-        {paso === 5 && <PasoResumen />}
+        {paso === 2 && <PasoClientes onNext={avanzar} onSkip={avanzar} />}
+        {paso === 3 && <PasoInventario onNext={avanzar} />}
+        {paso === 4 && <PasoColaboradores onNext={avanzar} onSkip={avanzar} />}
+        {paso === 5 && <PasoActivos onNext={avanzar} onSkip={avanzar} />}
+        {paso === 6 && <PasoResumen />}
       </div>
     </div>
   )
