@@ -154,17 +154,17 @@ Durante el debugging de esta sesión, la service_role key de Supabase quedó exp
 20. Configuración: página placeholder
 21. Reportes: página hub con links a módulos financieros
 22. Autorización por rol: 23 funciones protegidas en 8 módulos
+23. Dashboard Ejecutivo con gráficas (recharts)
 
 ### ⏳ Pendientes
-1. Dashboard ejecutivo con gráficas (recharts)
-2. Exportar reportes a PDF
-3. Exportar reportes a Excel
-4. Integración Stripe (suscripciones)
-5. Landing page pública con precios
-6. Panel Super Admin
-7. Feature flags por plan
-8. Dominio personalizado
-9. Cliente piloto y lanzamiento
+1. Exportar reportes a PDF
+2. Exportar reportes a Excel
+3. Integración Stripe (suscripciones)
+4. Landing page pública con precios
+5. Panel Super Admin
+6. Feature flags por plan
+7. Dominio personalizado
+8. Cliente piloto y lanzamiento
 
 ## 9. Integridad Contable
 Principio fundamental: todos los módulos están atados.
@@ -226,6 +226,13 @@ Principio fundamental: todos los módulos están atados.
 - Ambos fixes probados contra producción real (con reversión de datos de prueba) y desplegados a Vercel.
 - PENDIENTE — Orden 3 (5 mejoras UX, aún no ejecutada): 1) Agrandar modal "Nueva venta", 2) Buscador de cliente en Ventas, 3) Reordenar campos en "Nueva compra": Producto antes que Descripción, 4) Agregar opción "Otros" en Doc. proveedor, 5) Columna "Concepto" en tabla de Movimientos diarios del Flujo de Caja
 - PENDIENTE — Orden 4: Dashboard ejecutivo con recharts (Fase 7)
+
+### Sesión 4 — julio 2026
+- Dashboard Ejecutivo (Fase 7) construido en /dashboard-ejecutivo con recharts: 6 KPIs (ventas del mes, variación %, margen bruto, cartera pendiente, saldo de caja, servicio top) y 5 gráficas (ingresos 12 meses, top 5 servicios, distribución por tipo de pago, ingresos vs gastos 6 meses, evolución de cartera). Reutiliza la lógica ya existente de pyg/actions.js, balance/actions.js, flujo/actions.js y kpi/actions.js en vez de RPCs nuevos.
+- Menú lateral (Sidebar.js) reorganizado en 8 grupos lógicos y colapsables: Inicio, Configuración inicial (Servicios/Clientes/Inventario), Operación diaria (Ventas/Compras/Caja), Cobros (Cartera), Personal (Nómina), Activos (Activos fijos), Finanzas (Reportes/Dashboard Ejecutivo/P&G/Balance/Flujo/KPI/Tributario), Sistema (Usuarios/Configuración). Grupos inician expandidos, el grupo activo no se puede colapsar.
+- Onboarding Wizard ampliado de 6 a 7 pasos: 1) Bienvenida (ya no duplica régimen SRI/teléfono/dirección del registro, solo logo), 2) Servicios, 3) Clientes (nuevo), 4) Inventario (con gate mínimo de 1 insumo, igual que Servicios), 5) Colaboradores (opcional), 6) Activos fijos (opcional), 7) Resumen.
+- Se corrió un reset completo de datos operativos del tenant de prueba (Lavadero El Brillante) para volver a probar el onboarding de 7 pasos desde cero — login y configuración del tenant quedaron intactos.
+- Commits de la sesión: Orden 4 dashboard ejecutivo, 3f068a0 (menú + onboarding).
 
 ## 13. Notas Importantes
 - El proyecto Supabase se pausa por inactividad en plan Free. Reactivar desde supabase.com si da error de conexión
