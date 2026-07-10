@@ -184,8 +184,8 @@ function FilaServicio({ item, index, servicios, onChange, onRemove, canRemove })
   }
 
   return (
-    <div className="grid grid-cols-12 gap-2 items-end">
-      <div className="col-span-5">
+    <div className="p-3 rounded-xl border border-gray-100 bg-gray-50/50 space-y-2">
+      <div>
         <label className="block text-xs font-medium text-gray-500 mb-1">Servicio</label>
         <select value={item.servicio_id} onChange={handleServicioChange} className={INPUT + ' bg-white'}>
           <option value="">Selecciona o escribe</option>
@@ -194,34 +194,34 @@ function FilaServicio({ item, index, servicios, onChange, onRemove, canRemove })
           ))}
         </select>
       </div>
-      <div className="col-span-3">
-        <label className="block text-xs font-medium text-gray-500 mb-1">Descripción</label>
-        <input
-          type="text" value={item.descripcion} placeholder="Descripción"
-          onChange={(e) => onChange(index, { ...item, descripcion: e.target.value })}
-          className={INPUT}
-        />
-      </div>
-      <div className="col-span-1">
-        <label className="block text-xs font-medium text-gray-500 mb-1">Cant.</label>
-        <input
-          type="number" min="1" value={item.cantidad}
-          onChange={(e) => onChange(index, { ...item, cantidad: parseInt(e.target.value) || 1 })}
-          className={INPUT}
-        />
-      </div>
-      <div className="col-span-2">
-        <label className="block text-xs font-medium text-gray-500 mb-1">P. Unit.</label>
-        <input
-          type="number" min="0" step="0.01" value={item.precio_unitario}
-          onChange={(e) => onChange(index, { ...item, precio_unitario: parseFloat(e.target.value) || 0 })}
-          className={INPUT}
-        />
-      </div>
-      <div className="col-span-1 flex items-center justify-center pb-0.5">
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="flex-1 min-w-[140px]">
+          <label className="block text-xs font-medium text-gray-500 mb-1">Descripción</label>
+          <input
+            type="text" value={item.descripcion} placeholder="Descripción"
+            onChange={(e) => onChange(index, { ...item, descripcion: e.target.value })}
+            className={INPUT}
+          />
+        </div>
+        <div className="w-20">
+          <label className="block text-xs font-medium text-gray-500 mb-1">Cant.</label>
+          <input
+            type="number" min="1" value={item.cantidad}
+            onChange={(e) => onChange(index, { ...item, cantidad: parseInt(e.target.value) || 1 })}
+            className={INPUT}
+          />
+        </div>
+        <div className="w-24">
+          <label className="block text-xs font-medium text-gray-500 mb-1">P. Unit.</label>
+          <input
+            type="number" min="0" step="0.01" value={item.precio_unitario}
+            onChange={(e) => onChange(index, { ...item, precio_unitario: parseFloat(e.target.value) || 0 })}
+            className={INPUT}
+          />
+        </div>
         <button
           type="button" onClick={() => onRemove(index)} disabled={!canRemove}
-          className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-400 transition-colors disabled:opacity-30"
+          className="w-9 h-9 flex-shrink-0 flex items-center justify-center text-gray-300 hover:text-red-400 transition-colors disabled:opacity-30"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -240,6 +240,8 @@ function FormVenta({ clientes, servicios, ivaAplica, nextNumero, hoy, onClose })
   const [items, setItems] = useState([{ servicio_id: '', descripcion: '', cantidad: 1, precio_unitario: 0 }])
   const [modoCliente, setModoCliente] = useState('final') // 'final' | 'registrado'
   const [clienteId, setClienteId] = useState('')
+  const [clienteQuery, setClienteQuery] = useState('')
+  const [buscadorAbierto, setBuscadorAbierto] = useState(false)
   const [pideFactura, setPideFactura] = useState(false)
   const [facturaNombre, setFacturaNombre] = useState('')
   const [facturaRuc, setFacturaRuc] = useState('')
@@ -259,6 +261,16 @@ function FormVenta({ clientes, servicios, ivaAplica, nextNumero, hoy, onClose })
 
   const tipoDoc = pideFactura ? 'Factura' : 'Nota de Venta'
   const clienteSeleccionado = modoCliente === 'registrado' ? clientes.find((c) => c.id === clienteId) : null
+  const clientesFiltrados = clienteQuery.trim()
+    ? clientes.filter((c) => {
+        const q = clienteQuery.trim().toLowerCase()
+        return (
+          c.nombre?.toLowerCase().includes(q) ||
+          c.ruc_cedula?.toLowerCase().includes(q) ||
+          c.telefono?.toLowerCase().includes(q)
+        )
+      })
+    : clientes
   const plazoCredito = clienteSeleccionado?.plazo_credito ?? 0
   const creditoDisponible = modoCliente === 'registrado' && !!clienteSeleccionado && plazoCredito > 0
 
@@ -440,11 +452,56 @@ function FormVenta({ clientes, servicios, ivaAplica, nextNumero, hoy, onClose })
       </div>
 
       {modoCliente === 'registrado' && (
-        <div>
-          <select value={clienteId} onChange={(e) => setClienteId(e.target.value)} className={SELECT}>
-            <option value="">Selecciona un cliente</option>
-            {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-          </select>
+        <div className="relative">
+          {clienteSeleccionado && !buscadorAbierto ? (
+            <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">{clienteSeleccionado.nombre}</p>
+                <p className="text-xs text-gray-400 truncate">
+                  {[clienteSeleccionado.ruc_cedula, clienteSeleccionado.telefono].filter(Boolean).join(' · ')}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setBuscadorAbierto(true); setClienteQuery('') }}
+                className="flex-shrink-0 text-sm font-medium text-brand hover:underline"
+              >
+                Cambiar
+              </button>
+            </div>
+          ) : (
+            <>
+              <input
+                type="text"
+                value={clienteQuery}
+                onChange={(e) => setClienteQuery(e.target.value)}
+                onFocus={() => setBuscadorAbierto(true)}
+                placeholder="Buscar por nombre, cédula/RUC o teléfono..."
+                className={INPUT}
+              />
+              {buscadorAbierto && (
+                <div className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg">
+                  {clientesFiltrados.length === 0 ? (
+                    <p className="px-4 py-3 text-sm text-gray-400">Sin resultados</p>
+                  ) : (
+                    clientesFiltrados.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => { setClienteId(c.id); setBuscadorAbierto(false); setClienteQuery('') }}
+                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
+                      >
+                        <p className="font-medium text-gray-900">{c.nombre}</p>
+                        <p className="text-xs text-gray-400">
+                          {[c.ruc_cedula, c.telefono].filter(Boolean).join(' · ') || 'Sin datos adicionales'}
+                        </p>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 
@@ -777,7 +834,7 @@ export default function VentasUI({ ventas, clientes, servicios, ivaAplica, nextN
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
-          <div className="relative z-10 w-full max-w-2xl bg-white rounded-2xl shadow-xl border border-gray-100 p-6 max-h-[95vh] overflow-y-auto">
+          <div className="relative z-10 w-full max-w-3xl bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8 max-h-[95vh] overflow-y-auto">
             <FormVenta
               clientes={clientes} servicios={servicios}
               ivaAplica={ivaAplica} nextNumero={nextNumero} hoy={hoy}

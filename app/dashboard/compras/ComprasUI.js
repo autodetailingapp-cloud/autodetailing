@@ -9,7 +9,7 @@ const fmtFecha = (s) =>
   s ? new Date(s + 'T00:00:00').toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
 const TIPOS = ['Costo', 'Gasto']
-const TIPOS_DOC = ['Factura', 'Nota de Venta']
+const TIPOS_DOC = ['Factura', 'Nota de Venta', 'Otros']
 const PLAZOS = [0, 30, 60, 90]
 const INPUT = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'
 const SELECT = INPUT + ' bg-white'
@@ -214,16 +214,23 @@ function CamposCompra({
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">Descripción <span className="text-red-500">*</span></label>
-        <input name="descripcion" type="text" required defaultValue={compra?.descripcion ?? ''} placeholder="Detalle del producto o servicio comprado" className={INPUT} />
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Producto <span className="text-red-500">*</span></label>
+        <input name="producto" type="text" required defaultValue={compra?.producto ?? ''} placeholder="Ej: Shampoo automotriz" className={INPUT} />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Descripción</label>
+        <input name="descripcion" type="text" defaultValue={compra?.descripcion ?? ''} placeholder="Detalle adicional (opcional)" className={INPUT} />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">N° {tipoDocCompra === 'Factura' ? 'factura' : 'documento'}</label>
-          <input name="numero_factura" type="text" defaultValue={compra?.numero_factura ?? ''} placeholder="001-001-00000001" className={INPUT} />
-        </div>
-        <div>
+        {tipoDocCompra !== 'Otros' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">N° {tipoDocCompra === 'Factura' ? 'factura' : 'documento'}</label>
+            <input name="numero_factura" type="text" defaultValue={compra?.numero_factura ?? ''} placeholder="001-001-00000001" className={INPUT} />
+          </div>
+        )}
+        <div className={tipoDocCompra === 'Otros' ? 'col-span-2' : ''}>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Fecha <span className="text-red-500">*</span></label>
           <input name="fecha" type="date" required defaultValue={compra?.fecha ?? hoy} className={INPUT} />
         </div>
@@ -259,7 +266,7 @@ function CamposCompra({
       </div>
 
       {tipoDocCompra !== 'Factura' && (
-        <p className="text-xs text-gray-400">Nota de Venta: sin IVA</p>
+        <p className="text-xs text-gray-400">{tipoDocCompra}: sin IVA</p>
       )}
       </>
       )}
@@ -413,7 +420,8 @@ export default function ComprasUI({ compras, hoy, insumos }) {
                     <td className="px-6 py-4 text-gray-500">{fmtFecha(c.fecha)}</td>
                     <td className="px-6 py-4 font-medium text-gray-900">{c.proveedor}</td>
                     <td className="px-6 py-4 text-gray-600">
-                      <p className="line-clamp-1 max-w-xs">{c.descripcion}</p>
+                      <p className="line-clamp-1 max-w-xs font-medium text-gray-800">{c.producto ?? c.descripcion}</p>
+                      {c.producto && c.descripcion && <p className="line-clamp-1 max-w-xs text-xs text-gray-400">{c.descripcion}</p>}
                       {c.numero_factura && <p className="text-xs text-gray-400 mt-0.5">Fact: {c.numero_factura}</p>}
                     </td>
                     <td className="px-6 py-4 text-center">
@@ -453,7 +461,7 @@ export default function ComprasUI({ compras, hoy, insumos }) {
                       {c.tipo}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-400 mt-0.5 truncate">{c.descripcion}</p>
+                  <p className="text-xs text-gray-400 mt-0.5 truncate">{c.producto ?? c.descripcion}</p>
                   <p className="text-xs text-gray-400">{fmtFecha(c.fecha)}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
@@ -492,7 +500,7 @@ export default function ComprasUI({ compras, hoy, insumos }) {
 
       {confirmDelete && (
         <ModalConfirmar
-          nombre={confirmDelete.descripcion}
+          nombre={confirmDelete.producto ?? confirmDelete.descripcion}
           onConfirm={handleDelete}
           onCancel={() => setConfirmDelete(null)}
           pending={deletePending}

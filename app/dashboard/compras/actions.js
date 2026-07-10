@@ -19,7 +19,8 @@ export async function crearCompra(prevState, formData) {
   const proveedor         = formData.get('proveedor')?.toString().trim()
   const tipo              = formData.get('tipo')?.toString()
   const tipo_doc_compra   = formData.get('tipo_doc_compra')?.toString() || 'Factura'
-  const descripcion       = formData.get('descripcion')?.toString().trim()
+  const producto          = formData.get('producto')?.toString().trim()
+  const descripcion       = formData.get('descripcion')?.toString().trim() || null
   const numero_factura    = formData.get('numero_factura')?.toString().trim() || null
   const fecha             = formData.get('fecha')?.toString()
   const subtotal          = parseFloat(formData.get('subtotal'))
@@ -29,7 +30,7 @@ export async function crearCompra(prevState, formData) {
 
   if (!proveedor)  return { error: 'El proveedor es requerido' }
   if (!tipo)       return { error: 'El tipo es requerido' }
-  if (!descripcion) return { error: 'La descripción es requerida' }
+  if (!producto)   return { error: 'El producto es requerido' }
   if (!fecha)      return { error: 'La fecha es requerida' }
   if (isNaN(subtotal) || subtotal < 0) return { error: 'Subtotal inválido' }
   if (isNaN(total) || total < 0)       return { error: 'Total inválido' }
@@ -41,7 +42,7 @@ export async function crearCompra(prevState, formData) {
     .from('compras')
     .insert({
       tenant_id: profile.tenant_id,
-      proveedor, tipo, tipo_doc_compra, descripcion, numero_factura, fecha,
+      proveedor, tipo, tipo_doc_compra, producto, descripcion, numero_factura, fecha,
       subtotal: parseFloat(subtotal.toFixed(2)),
       iva: parseFloat((isNaN(iva) ? 0 : iva).toFixed(2)),
       total: parseFloat(total.toFixed(2)),
@@ -89,7 +90,8 @@ export async function actualizarCompra(prevState, formData) {
   const proveedor       = formData.get('proveedor')?.toString().trim()
   const tipo            = formData.get('tipo')?.toString()
   const tipo_doc_compra = formData.get('tipo_doc_compra')?.toString() || 'Factura'
-  const descripcion     = formData.get('descripcion')?.toString().trim()
+  const producto        = formData.get('producto')?.toString().trim()
+  const descripcion     = formData.get('descripcion')?.toString().trim() || null
   const numero_factura  = formData.get('numero_factura')?.toString().trim() || null
   const fecha           = formData.get('fecha')?.toString()
   const subtotal        = parseFloat(formData.get('subtotal'))
@@ -97,7 +99,7 @@ export async function actualizarCompra(prevState, formData) {
   const total           = parseFloat(formData.get('total'))
   const plazo           = parseInt(formData.get('plazo_pago_proveedor') ?? '0')
 
-  if (!id || !proveedor || !descripcion || !fecha) return { error: 'Datos inválidos' }
+  if (!id || !proveedor || !producto || !fecha) return { error: 'Datos inválidos' }
 
   const { data: compraActual } = await supabaseAdmin
     .from('compras').select('fecha')
@@ -116,7 +118,7 @@ export async function actualizarCompra(prevState, formData) {
   const { error } = await supabaseAdmin
     .from('compras')
     .update({
-      proveedor, tipo, tipo_doc_compra, descripcion, numero_factura, fecha,
+      proveedor, tipo, tipo_doc_compra, producto, descripcion, numero_factura, fecha,
       subtotal: parseFloat(subtotal.toFixed(2)),
       iva: parseFloat((isNaN(iva) ? 0 : iva).toFixed(2)),
       total: parseFloat(total.toFixed(2)),

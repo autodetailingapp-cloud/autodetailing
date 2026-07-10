@@ -20,11 +20,11 @@ export async function getDatosFlujo(mes, ano) {
   const hastaSig = `${anoSig}-${pad(mesSig)}-${pad(finDiaSig)}`
 
   const [ventasRes, pagosRes, comprasRes, ventasSigRes, comprasSigRes] = await Promise.all([
-    supabaseAdmin.from('ventas').select('fecha,total,tipo_pago').eq('tenant_id', profile.tenant_id)
+    supabaseAdmin.from('ventas').select('fecha,total,tipo_pago,numero_documento').eq('tenant_id', profile.tenant_id)
       .gte('fecha', desde).lte('fecha', hasta).eq('estado', 'activa').order('fecha'),
-    supabaseAdmin.from('pagos_cartera').select('fecha,monto').eq('tenant_id', profile.tenant_id)
+    supabaseAdmin.from('pagos_cartera').select('fecha,monto,cartera(cliente_id,clientes(nombre))').eq('tenant_id', profile.tenant_id)
       .gte('fecha', desde).lte('fecha', hasta).order('fecha'),
-    supabaseAdmin.from('compras').select('fecha,total').eq('tenant_id', profile.tenant_id)
+    supabaseAdmin.from('compras').select('fecha,total,proveedor,tipo,descripcion').eq('tenant_id', profile.tenant_id)
       .gte('fecha', desde).lte('fecha', hasta).order('fecha'),
     supabaseAdmin.from('ventas').select('total,tipo_pago').eq('tenant_id', profile.tenant_id)
       .gte('fecha', desdeSig).lte('fecha', hastaSig).eq('estado', 'activa'),
@@ -36,22 +36,27 @@ export async function getDatosFlujo(mes, ano) {
   const movsPorDia = {}
   for (let d = 1; d <= finDia; d++) {
     const key = `${ano}-${pad(mes)}-${pad(d)}`
-    movsPorDia[key] = { fecha: key, entradas: 0, salidas: 0 }
+    movsPorDia[key] = { fecha: key, entradas: 0, salidas: 0, conceptos: [] }
   }
 
   for (const v of ventasRes.data ?? []) {
     if (v.tipo_pago !== 'Crédito' && movsPorDia[v.fecha]) {
       movsPorDia[v.fecha].entradas += Number(v.total)
+      movsPorDia[v.fecha].conceptos.push(`Venta #${v.numero_documento}`)
     }
   }
   for (const p of pagosRes.data ?? []) {
     if (movsPorDia[p.fecha]) {
       movsPorDia[p.fecha].entradas += Number(p.monto)
+      movsPorDia[p.fecha].conceptos.push(`Pago cartera - ${p.cartera?.clientes?.nombre ?? 'Cliente'}`)
     }
   }
   for (const c of comprasRes.data ?? []) {
     if (movsPorDia[c.fecha]) {
       movsPorDia[c.fecha].salidas += Number(c.total)
+      movsPorDia[c.fecha].conceptos.push(
+        c.proveedor === 'Nómina' ? (c.descripcion || 'Nómina') : `Compra - ${c.descripcion || c.proveedor}`
+      )
     }
   }
 

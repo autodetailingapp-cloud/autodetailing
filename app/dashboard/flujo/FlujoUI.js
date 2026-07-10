@@ -152,6 +152,7 @@ export default function FlujoUI({ datos: datosInit, mesInicial, anoInicial }) {
             <thead className="sticky top-0 bg-white border-b border-gray-100">
               <tr>
                 <th className="text-left py-2.5 pl-4 text-xs font-semibold text-gray-500">Fecha</th>
+                <th className="text-left py-2.5 pr-4 text-xs font-semibold text-gray-500">Concepto</th>
                 <th className="text-right py-2.5 pr-4 text-xs font-semibold text-green-600">Entradas</th>
                 <th className="text-right py-2.5 pr-4 text-xs font-semibold text-red-500">Salidas</th>
                 <th className="text-right py-2.5 pr-4 text-xs font-semibold text-gray-500">Neto día</th>
@@ -160,11 +161,15 @@ export default function FlujoUI({ datos: datosInit, mesInicial, anoInicial }) {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {diasConMov.length === 0 ? (
-                <tr><td colSpan={5} className="py-8 text-center text-sm text-gray-400">Sin movimientos en el período</td></tr>
+                <tr><td colSpan={6} className="py-8 text-center text-sm text-gray-400">Sin movimientos en el período</td></tr>
               ) : (
                 diasConMov.map((d) => (
                   <tr key={d.fecha} className="hover:bg-gray-50">
                     <td className="py-2.5 pl-4 text-sm text-gray-600">{fmtFecha(d.fecha)}</td>
+                    <td className="py-2.5 pr-4 text-sm text-gray-600 max-w-xs">
+                      {(d.conceptos ?? []).slice(0, 3).join(', ')}
+                      {(d.conceptos?.length ?? 0) > 3 && ` +${d.conceptos.length - 3} más`}
+                    </td>
                     <td className="py-2.5 pr-4 text-sm text-right text-green-700 font-medium">{d.entradas > 0 ? fmt(d.entradas) : '—'}</td>
                     <td className="py-2.5 pr-4 text-sm text-right text-red-600">{d.salidas > 0 ? fmt(d.salidas) : '—'}</td>
                     <td className={`py-2.5 pr-4 text-sm text-right font-medium ${d.neto >= 0 ? 'text-green-700' : 'text-red-600'}`}>{fmt(d.neto)}</td>
