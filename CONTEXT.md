@@ -234,6 +234,12 @@ Principio fundamental: todos los módulos están atados.
 - Se corrió un reset completo de datos operativos del tenant de prueba (Lavadero El Brillante) para volver a probar el onboarding de 7 pasos desde cero — login y configuración del tenant quedaron intactos.
 - Commits de la sesión: Orden 4 dashboard ejecutivo, 3f068a0 (menú + onboarding).
 
+### Sesión 5 — julio 2026
+- Sistema de clientes unificado (commit da932a1): tabla clientes ahora distingue tipo_cliente ('Ocasional'/'Frecuente') con restricción UNIQUE(tenant_id, ruc_cedula). Al facturar como Consumidor Final en Ventas, se hace upsert automático por ruc_cedula: si el cliente no existe se crea como Ocasional sin crédito, si ya existe se reutiliza (no se duplica). En el módulo Clientes (crear y editar), si el RUC/cédula ingresado ya existe se muestra un aviso de coincidencia con opción de traer ese registro y convertirlo en Frecuente en vez de crear un duplicado.
+- Se inició la migración al nuevo sistema de diseño visual generado con Claude Design: tipografía Plus Jakarta Sans, paleta cálida (fondo #EFECE4, verde marca #1D9E75, morado #534AB7, neutros cálidos), iconos Phosphor duotone, componentes base (tarjetas, botones, badge de confianza SRI, estados vacíos con invitación a la acción). Aplicado como prueba en el Dashboard principal — pendiente replicar al resto de los 23 módulos.
+- Se definió que el Onboarding Wizard real (7 pasos) mantiene su estructura funcional ya construida (sin datos duplicados del registro, sin paso de "método de cobro" que no existe en el modelo de datos) — el diseño de Claude Design se adapta a la plataforma, no al revés.
+- Pendiente: aplicar sistema de diseño al resto de módulos, decidir entre las 2 variaciones del Dashboard Principal propuestas por Claude Design, probar en producción el flujo completo de clientes (ocasional → frecuente).
+
 ## 13. Notas Importantes
 - El proyecto Supabase se pausa por inactividad en plan Free. Reactivar desde supabase.com si da error de conexión
 - El token de GitHub para push está guardado en el gestor de contraseñas, no en este archivo ni en el código (ver sección 4). Si el remoto pide autenticación, regenerarlo desde GitHub
